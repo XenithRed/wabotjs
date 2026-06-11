@@ -1,0 +1,7 @@
+node_modules/
+Dist/
+Auth/
+
+package.json
+pnpm-lock.yaml
+pnpm-workspace.yaml

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ESNext"],
+    "types": ["node"],
+
+    "rootDir": "Src/",
+    "outDir": "Dist/",
+
+    "declaration": true,
+    "declarationMap": false,
+
+    "sourceMap": false,
+    "inlineSourceMap": false,
+
+    "strict": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["Src/**/*"],
+  "exclude": ["node_modules/", "Dist/", "**/*.test.ts"]
+}
