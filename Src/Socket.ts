@@ -1,18 +1,20 @@
 import * as baileys from 'baileys';
 
-interface Socket extends Omit<baileys.WASocket, 'end' | 'logout'> {}
+interface Socket extends Omit<baileys.WASocket, 'end' | 'logout' | 'authState'> {}
 class Socket {
-  #ws: baileys.WASocket;
+  #end: (msg?: Error) => Promise<void>;
+  #logout: (msg?: string) => Promise<void>;
   constructor(config: baileys.UserFacingSocketConfig) {
-    this.#ws = baileys.makeWASocket(config);
-    const { end: _end, logout: _logout, ...rest } = this.#ws;
+    const { end, logout, authState: _authState, ...rest } = baileys.makeWASocket(config);
+    this.#end = end;
+    this.#logout = logout;
     Object.assign(this, rest);
   }
   async end(reason?: Error) {
-    await this.#ws.end(reason);
+    await this.#end(reason);
   }
   async logout(reason?: Error) {
-    await this.#ws.logout(reason?.message);
+    await this.#logout(reason?.message);
   }
 }
 export default Socket;

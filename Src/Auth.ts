@@ -5,41 +5,26 @@ import path from 'node:path';
 export default class Auth {
   #decoder = new TextDecoder('utf-8');
   #encoder = new TextEncoder();
-  #store: InstanceType<typeof Utils.SQLiteStore>;
-  #dir: string;
+  #cache: InstanceType<typeof Utils.SQLiteCache>;
   #creds?: baileys.AuthenticationCreds;
   #keys?: baileys.SignalKeyStore;
   #loaded = false;
   #loading = false;
   constructor(dir: string) {
-    Utils.assertString(dir, 'dir');
-    this.#dir = path.isAbsolute(dir) ? dir : path.resolve(dir);
-    this.#store = new Utils.SQLiteStore(this.#dir, 'auth');
-  }
-  get dir() {
-    return this.#dir;
+    Utils.assertType(dir, 'dir', 'string');
+    this.#cache = new Utils.SQLiteCache(path.isAbsolute(dir) ? dir : path.resolve(dir), 'auth');
   }
   #makeKey(...args: string[]) {
     return args.join(':');
   }
   get<T = unknown>(key: string) {
-    Utils.assertString(key, 'key');
-    const arr = this.#store.get(key);
+    Utils.assertType(key, 'key', 'string');
+    const arr = this.#cache.get(key);
     if (!(arr instanceof Uint8Array)) {
       return undefined;
     }
     const str = this.#decoder.decode(arr);
     return JSON.parse(str, baileys.BufferJSON.reviver) as T;
-  }
-  set(key: string, value: object | string) {
-    Utils.assertString(key, 'key');
-    const str = JSON.stringify(value, baileys.BufferJSON.replacer);
-    const arr = this.#encoder.encode(str);
-    this.#store.set(key, arr);
-  }
-  del(key: string) {
-    Utils.assertString(key, 'key');
-    this.#store.del(key);
   }
   get state() {
     if (!this.#creds || !this.#keys) {
@@ -50,13 +35,23 @@ export default class Auth {
       keys: this.#keys,
     } as baileys.AuthenticationState;
   }
+  set(key: string, value: object | string) {
+    Utils.assertType(key, 'key', 'string');
+    const str = JSON.stringify(value, baileys.BufferJSON.replacer);
+    const arr = this.#encoder.encode(str);
+    this.#cache.set(key, arr);
+  }
+  del(key: string) {
+    Utils.assertType(key, 'key', 'string');
+    this.#cache.del(key);
+  }
   load() {
     try {
       if (this.#loaded || this.#loading) {
         return;
       }
       this.#loading = true;
-      this.#store.initialize();
+      this.#cache.initialize();
       this.#creds = this.get('creds') || baileys.initAuthCreds();
       this.#keys = {
         get: (type, ids) => {
@@ -73,7 +68,7 @@ export default class Auth {
         },
         set: (data) => {
           try {
-            this.#store.db.exec('BEGIN TRANSACTION;');
+            this.#cache.db.exec('BEGIN TRANSACTION;');
             for (const type of Object.keys(data) as (keyof baileys.SignalDataSet)[]) {
               if (!data[type]) {
                 continue;
@@ -84,9 +79,9 @@ export default class Auth {
                 value ? this.set(key, value) : this.del(key);
               }
             }
-            this.#store.db.exec('COMMIT;');
+            this.#cache.db.exec('COMMIT;');
           } catch (v) {
-            this.#store.db.exec('ROLLBACK;');
+            this.#cache.db.exec('ROLLBACK;');
             throw Utils.toError(v);
           }
         },
@@ -100,7 +95,7 @@ export default class Auth {
     }
   }
   drop() {
-    this.#store.drop();
+    this.#cache.drop();
     this.#creds = undefined;
     this.#keys = undefined;
     this.#loaded = false;

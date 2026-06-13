@@ -21,6 +21,6 @@ export function resolvePN(...args: unknown[]) {
   return pn ? baileys.jidNormalizedUser(pn) : undefined;
 }
 export async function delay(ms: number) {
-  Utils.assertNumber(ms, 'ms');
+  Utils.assertType(ms, 'ms', 'number');
   return new Promise((r) => setTimeout(r, ms));
 }

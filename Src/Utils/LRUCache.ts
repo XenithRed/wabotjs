@@ -4,7 +4,8 @@ export default class LRUCache<V> {
   #cache = new Map<string, V>();
   #capacity: number;
   constructor(capacity: number) {
-    if (typeof capacity !== 'number' || capacity < 1) {
+    Utils.assertType(capacity, 'capacity', 'number');
+    if (capacity < 1) {
       throw new TypeError('capacity must be a positive number');
     }
     this.#capacity = capacity;
@@ -12,13 +13,16 @@ export default class LRUCache<V> {
   get size() {
     return this.#cache.size;
   }
+  get capacity() {
+    return this.#capacity;
+  }
   set(key: string, value: V) {
-    Utils.assertString(key, 'key');
+    Utils.assertType(key, 'key', 'string');
     if (this.#cache.has(key)) {
       this.#cache.delete(key);
     }
     this.#cache.set(key, value);
-    if (this.#cache.size > this.#capacity) {
+    if (this.#cache.size > this.capacity) {
       const k = this.#cache.keys().next().value;
       if (k !== undefined) {
         this.#cache.delete(k);
@@ -27,7 +31,7 @@ export default class LRUCache<V> {
     return this;
   }
   get(key: string) {
-    Utils.assertString(key, 'key');
+    Utils.assertType(key, 'key', 'string');
     if (!this.#cache.has(key)) {
       return undefined;
     }
@@ -37,14 +41,14 @@ export default class LRUCache<V> {
     return value;
   }
   del(key: string) {
-    Utils.assertString(key, 'key');
+    Utils.assertType(key, 'key', 'string');
     return this.#cache.delete(key);
   }
   clear() {
     this.#cache.clear();
   }
   has(key: string) {
-    Utils.assertString(key, 'key');
+    Utils.assertType(key, 'key', 'string');
     return this.#cache.has(key);
   }
   keys() {

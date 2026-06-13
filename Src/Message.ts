@@ -20,8 +20,8 @@ export default class Message {
   path?: string;
   quoted?: Message;
   constructor(raw: baileys.WAMessage, bot: Bot) {
-    Utils.assertString(raw.key.id, 'raw.key.id');
-    Utils.assertString(raw.key.remoteJid, 'raw.key.remoteJid');
+    Utils.assertType(raw.key.id, 'raw.key.id', 'string');
+    Utils.assertType(raw.key.remoteJid, 'raw.key.remoteJid', 'string');
     this.#raw = raw;
     this.#bot = bot;
     this.id = raw.key.id!;
@@ -278,7 +278,7 @@ export default class Message {
     return m ? new Message(m, this.#bot) : undefined;
   }
   async react(emoji: string) {
-    Utils.assertString(emoji, 'emoji');
+    Utils.assertType(emoji, 'emoji', 'string');
     const m = await this.#bot.sock.sendMessage(this.chat, { react: { text: emoji } });
     return m ? new Message(m, this.#bot) : undefined;
   }

@@ -3,7 +3,7 @@ import * as asserts from './asserts.js';
 import * as generics from './generics.js';
 import LRUCache from './LRUCache.js';
 import TTLCache from './TTLCache.js';
-import SQLiteStore from './SQLiteStore.js';
+import SQLiteCache from './SQLiteCache.js';
 
 export default {
   ...converters,
@@ -11,5 +11,5 @@ export default {
   ...generics,
   TTLCache,
   LRUCache,
-  SQLiteStore,
+  SQLiteCache,
 };

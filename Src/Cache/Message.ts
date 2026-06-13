@@ -2,21 +2,23 @@ import Utils from '../Utils/index.js';
 import * as baileys from 'baileys';
 import type Socket from '../Socket.js';
 import path from 'node:path';
-import Constants from '../Constants.js';
+import ms from 'ms';
 
 export default class Message {
   #decoder = new TextDecoder('utf-8');
   #encoder = new TextEncoder();
-  #dir: string;
-  #store: InstanceType<typeof Utils.SQLiteStore>;
+  #cache: InstanceType<typeof Utils.SQLiteCache>;
   constructor(dir: string) {
-    Utils.assertString(dir, 'dir');
-    this.#dir = path.isAbsolute(dir) ? dir : path.resolve(dir);
-    this.#store = new Utils.SQLiteStore(this.#dir, 'message_store', Constants.MSG_STORE_TTL);
+    Utils.assertType(dir, 'dir', 'string');
+    this.#cache = new Utils.SQLiteCache(
+      path.isAbsolute(dir) ? dir : path.resolve(dir),
+      'message_cache',
+      ms('1d'),
+    );
   }
   #process(id: string, message: baileys.WAProto.IMessage) {
-    Utils.assertString(id, 'id');
-    if (!this.#store.has(id)) {
+    Utils.assertType(id, 'id', 'string');
+    if (!this.#cache.has(id)) {
       const str = JSON.stringify(message, (_, v) => {
         if (v instanceof Buffer) {
           return {
@@ -32,36 +34,39 @@ export default class Message {
         }
         return v;
       });
-      this.#store.set(id, this.#encoder.encode(str));
+      this.#cache.set(id, this.#encoder.encode(str));
     }
   }
   bind(sock: Socket) {
-    this.#store.initialize();
+    this.#cache.initialize();
     sock.ev.on('messages.upsert', (u) => {
-      for (const m of u.messages) {
-        if (m.message && m.key.id) {
-          this.#process(m.key.id, m.message);
+      for (const msg of u.messages) {
+        if (msg.message && msg.key.id) {
+          this.#process(msg.key.id, msg.message);
         }
       }
     });
     sock.ev.on('messages.update', (u) => {
-      for (const m of u) {
-        if (m.key.id) {
-          const curr = this.resolve(m.key.id);
+      for (const msg of u) {
+        if (msg.key.id) {
+          const curr = this.resolve(msg.key.id);
           if (curr) {
             const message = {
               ...curr,
-              ...m.update,
+              ...msg.update,
             };
-            this.#process(m.key.id, message);
+            this.#process(msg.key.id, message);
           }
         }
       }
     });
   }
+  drop() {
+    this.#cache.drop();
+  }
   resolve(id: string) {
-    Utils.assertString(id, 'id');
-    const arr = this.#store.get(id);
+    Utils.assertType(id, 'id', 'string');
+    const arr = this.#cache.get(id);
     if (!(arr instanceof Uint8Array)) {
       return undefined;
     }

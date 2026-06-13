@@ -1,48 +1,39 @@
-export function assertString(param: unknown, name: string): param is string {
-  if (typeof param !== 'string') {
-    const type = typeof param;
+type TypeMap = {
+  bigint: bigint;
+  boolean: boolean;
+  function: (...args: any[]) => any;
+  number: number;
+  object: object;
+  string: string;
+  symbol: symbol;
+  undefined: undefined;
+};
+export function assertType<T extends keyof TypeMap>(
+  value: unknown,
+  name: string,
+  expected: T,
+): value is TypeMap[T] {
+  if (typeof value !== expected) {
+    const type = typeof value;
+    const t =
+      type === 'object' ? (value === null ? 'null' : value ? value.constructor.name : type) : type;
     throw new TypeError(
-      `expected ${name} to be a string, but got ${type === 'object' ? param?.constructor.name : type}`,
+      `it was expected that ${name} would be a ${expected}, but a ${t} was received`,
     );
   }
   return true;
 }
-export function assertNumber(param: unknown, name: string): param is number {
-  assertString(name, 'string');
-  if (typeof param !== 'number' || isNaN(param)) {
-    const type = typeof param;
+export function assertInstance<I>(
+  value: unknown,
+  name: string,
+  constructor: new (...args: any[]) => I,
+): value is I {
+  if (!(value instanceof constructor)) {
+    const type = typeof value;
+    const t =
+      type === 'object' ? (type === null ? 'null' : value ? value.constructor.name : type) : type;
     throw new TypeError(
-      `expected ${name} to be a number, but got ${type === 'object' ? param?.constructor.name : type}`,
-    );
-  }
-  return true;
-}
-export function assertBuffer(param: unknown, name: string): param is Buffer {
-  assertString(name, 'name');
-  if (!(param instanceof Buffer)) {
-    const type = typeof param;
-    throw new TypeError(
-      `expected ${name} to be a Buffer, but got ${type === 'object' ? param?.constructor.name : type}`,
-    );
-  }
-  return true;
-}
-export function assertUint8Array(param: unknown, name: string): param is Uint8Array {
-  assertString(name, 'name');
-  if (!(param instanceof Uint8Array)) {
-    const type = typeof param;
-    throw new TypeError(
-      `expected ${name} to be a Uint8Array, but got ${type === 'object' ? param?.constructor.name : type}`,
-    );
-  }
-  return true;
-}
-export function assertFunction(param: unknown, name: string): param is Function {
-  assertString(name, 'name');
-  if (typeof param !== 'function') {
-    const type = typeof param;
-    throw new TypeError(
-      `expected ${name} to be a Function, but got ${type === 'object' ? param?.constructor.name : type}`,
+      `it was expected that ${name} would be a ${constructor.name} instance, but an ${t} was received`,
     );
   }
   return true;

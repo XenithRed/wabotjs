@@ -35,16 +35,12 @@ bot.onCommand(async (m, prefix, name, args) => {
   try {
     if (name === 'ping') {
       const start = Date.now();
-      const res = await m.reply({ text: 'Pong!\n> ..ms' });
+      const res = await m.reply({ text: 'Pong: ..ms' });
       const end = Date.now();
       const ping = Math.max(0, Math.floor(end - start));
       if (res) {
-        await res.edit({ text: `Pong!\n> ${ping}ms` });
+        await res.edit({ text: `Pong: ${ping}ms` });
       }
-      return;
-    }
-    if (name === 'food') {
-      await m.reply({ text: 'bar' });
       return;
     }
     if (name === 'echo') {
@@ -63,8 +59,7 @@ bot.onCommand(async (m, prefix, name, args) => {
         }
         const result = util.inspect(out, {
           colors: false,
-          showHidden: false,
-          compact: true,
+          depth: null,
         });
         await m.reply({ text: result });
       } catch (v) {

@@ -2,7 +2,7 @@ export function toString(value: unknown) {
   if (typeof value === 'string') {
     return value;
   }
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === 'object') {
     return JSON.stringify(value);
   }
   return String(value);
@@ -12,4 +12,18 @@ export function toError(value: unknown) {
     return value;
   }
   return new Error(toString(value));
+}
+export function toNumber(value: unknown) {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (
+    typeof value === 'object' &&
+    value &&
+    'toNumber' in value &&
+    typeof value.toNumber === 'function'
+  ) {
+    return value.toNumber() as number;
+  }
+  return Number(value);
 }

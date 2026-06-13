@@ -1,3 +1,4 @@
+import ms from 'ms';
 import Utils from './index.js';
 
 export default class TTLCache<V> {
@@ -5,7 +6,8 @@ export default class TTLCache<V> {
   #ttl: number;
   #interval?: NodeJS.Timeout;
   constructor(ttl: number) {
-    if (typeof ttl !== 'number' || ttl < 1) {
+    Utils.assertType(ttl, 'ttl', 'number');
+    if (ttl < 1) {
       throw new TypeError('ttl must be a positive number');
     }
     this.#ttl = ttl;
@@ -14,6 +16,7 @@ export default class TTLCache<V> {
     if (this.#interval) {
       return;
     }
+    const period = Math.min(this.ttl, ms('30m'));
     this.#interval = setInterval(() => {
       const now = Date.now();
       for (const [k, v] of this.#cache.entries()) {
@@ -24,30 +27,36 @@ export default class TTLCache<V> {
       if (this.#cache.size < 1) {
         this.#stopCleaner();
       }
-    }, this.#ttl);
+    }, period);
     this.#interval.unref();
   }
   #stopCleaner() {
-    if (!this.#interval) {
-      return;
+    if (this.#interval) {
+      clearInterval(this.#interval);
+      this.#interval = undefined;
     }
-    clearInterval(this.#interval);
   }
   get size() {
     return this.values().length;
   }
+  get ttl() {
+    return this.#ttl;
+  }
   set(key: string, value: V) {
-    Utils.assertString(key, 'key');
-    this.#cache.set(key, { expire: this.#ttl + Date.now(), value });
+    Utils.assertType(key, 'key', 'string');
+    const now = Date.now();
+    this.#cache.set(key, { expire: now + this.ttl, value });
     this.#startCleaner();
     return this;
   }
   get(key: string) {
-    Utils.assertString(key, 'key');
-    return this.#cache.get(key)?.value;
+    Utils.assertType(key, 'key', 'string');
+    const now = Date.now();
+    const cached = this.#cache.get(key);
+    return cached && now < cached.expire ? cached.value : undefined;
   }
   del(key: string) {
-    Utils.assertString(key, 'key');
+    Utils.assertType(key, 'key', 'string');
     return this.#cache.delete(key);
   }
   clear() {
@@ -55,7 +64,7 @@ export default class TTLCache<V> {
     this.#stopCleaner();
   }
   has(key: string) {
-    Utils.assertString(key, 'key');
+    Utils.assertType(key, 'key', 'string');
     const now = Date.now();
     const cached = this.#cache.get(key);
     return cached && now < cached.expire ? true : false;

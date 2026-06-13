@@ -5,15 +5,15 @@ import pino from 'pino';
 import libphonenumber from 'libphonenumber-js';
 import boom from '@hapi/boom';
 import Socket from './Socket.js';
-import Stores from './Stores/index.js';
+import Cache from './Cache/index.js';
 import path from 'node:path';
 import Message from './Message.js';
-import Constants from './Constants.js';
+import ms from 'ms';
 
 export default class Bot {
   #prefix = '/';
-  #retryDelay = 5000;
-  #maxRetryDelay = 1000 * 60 * 5;
+  #retryDelay = ms('5s');
+  #maxRetryDelay = ms('5m');
   #id: string;
   #datadir: string;
   #sock?: Socket;
@@ -35,20 +35,20 @@ export default class Bot {
   #onCommand = async (m: Message, prefix: string, name: string, args: string[]) => {};
   auth: Auth;
   cache: {
-    jid: InstanceType<typeof Stores.JID>;
-    message: InstanceType<typeof Stores.Message>;
+    jid: InstanceType<typeof Cache.JID>;
+    message: InstanceType<typeof Cache.Message>;
     metadata: InstanceType<typeof Utils.TTLCache<baileys.GroupMetadata>>;
   };
   constructor(id: string, datadir: string) {
-    Utils.assertString(id, 'id');
-    Utils.assertString(datadir, 'datadir');
+    Utils.assertType(id, 'id', 'string');
+    Utils.assertType(datadir, 'datadir', 'string');
     this.#id = id;
     this.#datadir = path.isAbsolute(datadir) ? datadir : path.resolve(datadir);
     this.auth = new Auth(this.#datadir);
     this.cache = {
-      jid: new Stores.JID(this.#datadir),
-      message: new Stores.Message(this.#datadir),
-      metadata: new Utils.TTLCache(1000 * 60 * 10),
+      jid: new Cache.JID(this.#datadir),
+      message: new Cache.Message(this.#datadir),
+      metadata: new Utils.TTLCache(ms('10m')),
     };
   }
   get id() {
@@ -64,42 +64,42 @@ export default class Bot {
     return this.#sock;
   }
   onError(cb: (err: Error) => Promise<void>) {
-    Utils.assertFunction(cb, 'cb');
+    Utils.assertType(cb, 'cb', 'function');
     this.#onError = cb;
     return this;
   }
   onQR(cb: (str: string) => Promise<void>) {
-    Utils.assertFunction(cb, 'cb');
+    Utils.assertType(cb, 'cb', 'function');
     this.#onQR = cb;
     return this;
   }
   onOTP(cb: (code: string) => Promise<void>) {
-    Utils.assertFunction(cb, 'cb');
+    Utils.assertType(cb, 'cb', 'function');
     this.#onOTP = cb;
     return this;
   }
   onClose(cb: (err: boom.Output) => Promise<void>) {
-    Utils.assertFunction(cb, 'cb');
+    Utils.assertType(cb, 'cb', 'function');
     this.#onClose = cb;
     return this;
   }
   onOpen(cb: (user: baileys.Contact) => Promise<void>) {
-    Utils.assertFunction(cb, 'cb');
+    Utils.assertType(cb, 'cb', 'function');
     this.#onOpen = cb;
     return this;
   }
   onMessage(cb: (m: Message) => Promise<void>) {
-    Utils.assertFunction(cb, 'cb');
+    Utils.assertType(cb, 'cb', 'function');
     this.#onMessage = cb;
     return this;
   }
   onCommand(cb: (m: Message, prefix: string, name: string, args: string[]) => Promise<void>) {
-    Utils.assertFunction(cb, 'cb');
+    Utils.assertType(cb, 'cb', 'function');
     this.#onCommand = cb;
     return this;
   }
   setPrefix(prefix: string) {
-    Utils.assertString(prefix, 'prefix');
+    Utils.assertType(prefix, 'prefix', 'string');
     this.#prefix = prefix;
   }
   async login(pn?: string) {
@@ -109,7 +109,7 @@ export default class Bot {
       }
       this.#logging = true;
       if (pn) {
-        Utils.assertString(pn, 'pn');
+        Utils.assertType(pn, 'pn', 'string');
         if (!libphonenumber(pn.startsWith('+') ? pn : '+' + pn)?.isValid()) {
           throw new TypeError('invalid phone number');
         }
@@ -119,7 +119,10 @@ export default class Bot {
       }
       this.auth.load();
       const ww = await baileys.fetchLatestWaWebVersion({
-        headers: { 'User-Agent': Constants.USER_AGENT },
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:148.0) Gecko/20100101 Firefox/148.0',
+        },
       });
       if (ww.error) {
         throw Utils.toError(ww.error);
@@ -130,13 +133,16 @@ export default class Bot {
         browser: baileys.Browsers.ubuntu('Firefox'),
         logger: pino({ level: 'silent' }),
         options: {
-          headers: { 'User-Agent': Constants.USER_AGENT },
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:148.0) Gecko/20100101 Firefox/148.0',
+          },
         },
         markOnlineOnConnect: false,
         generateHighQualityLinkPreview: true,
         linkPreviewImageThumbnailWidth: 1080,
-        qrTimeout: 1000 * 30,
-        connectTimeoutMs: 1000 * 30,
+        qrTimeout: ms('30s'),
+        connectTimeoutMs: ms('60s'),
         maxMsgRetryCount: 5,
         shouldIgnoreJid: (j) => {
           return !baileys.isPnUser(j) && !baileys.isLidUser(j) && !baileys.isJidGroup(j);
@@ -157,7 +163,7 @@ export default class Bot {
       });
       this.cache.jid.bind(this.sock);
       this.cache.message.bind(this.sock);
-      this.sock.ev.on('creds.update', (u) => {
+      this.sock.ev.on('creds.update', () => {
         try {
           this.auth.saveCreds();
         } catch (v) {
@@ -167,7 +173,7 @@ export default class Bot {
       this.sock.ev.on('connection.update', async (u) => {
         try {
           if (u.qr) {
-            if (pn && !this.sock.authState.creds.registered) {
+            if (pn && !this.auth.state.creds.registered) {
               const code = await this.sock.requestPairingCode(pn.replace(/[^0-9]/g, ''));
               this.#onOTP(code).catch((v) =>
                 this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v))),
@@ -209,15 +215,13 @@ export default class Bot {
               return;
             }
             this.#logged = true;
-            this.#retryDelay = 5000;
+            this.#retryDelay = ms('5s');
             this.#onOpen(this.sock.user).catch((v) =>
               this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v))),
             );
           }
         } catch (v) {
-          this.#onError(Utils.toError(v)).catch((v) =>
-            this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v))),
-          );
+          this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v)));
         }
       });
       this.sock.ev.on('messages.upsert', (u) => {
@@ -225,9 +229,9 @@ export default class Bot {
           if (u.type !== 'notify') {
             return;
           }
-          for (const r of u.messages) {
-            if (r.message && r.key.remoteJid && r.key.id) {
-              const m = new Message(r, this);
+          for (const msg of u.messages) {
+            if (msg.message && msg.key.remoteJid && msg.key.id) {
+              const m = new Message(msg, this);
               this.#onMessage(m).catch((v) =>
                 this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v))),
               );
@@ -248,16 +252,12 @@ export default class Bot {
             }
           }
         } catch (v) {
-          this.#onError(Utils.toError(v)).catch((v) =>
-            this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v))),
-          );
+          this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v)));
         }
       });
     } catch (v) {
       this.#logged = false;
-      this.#onError(Utils.toError(v)).catch((v) =>
-        this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v))),
-      );
+      this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v)));
     } finally {
       this.#logging = false;
     }
@@ -267,14 +267,14 @@ export default class Bot {
       if (!this.#sock) {
         return;
       }
-      await this.#sock.logout().catch(() => void 0);
+      await this.sock.logout().catch(() => void 0);
       //@ts-ignore
-      this.#sock.ev.removeAllListeners(undefined);
+      this.sock.ev.removeAllListeners(undefined);
       this.auth.drop();
+      this.cache.jid.drop();
+      this.cache.message.drop();
     } catch (v) {
-      this.#onError(Utils.toError(v)).catch((v) =>
-        this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v))),
-      );
+      this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v)));
     } finally {
       this.#sock = undefined;
       this.#logging = false;
@@ -286,13 +286,11 @@ export default class Bot {
       if (!this.#sock) {
         return;
       }
-      await this.#sock.end().catch(() => void 0);
+      await this.sock.end().catch(() => void 0);
       //@ts-ignore
-      this.#sock.ev.removeAllListeners(undefined);
+      this.sock.ev.removeAllListeners(undefined);
     } catch (v) {
-      this.#onError(Utils.toError(v)).catch((v) =>
-        this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v))),
-      );
+      this.#onError(Utils.toError(v)).catch((v) => console.error(Utils.toError(v)));
     } finally {
       this.#sock = undefined;
       this.#logging = false;
