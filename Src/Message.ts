@@ -252,7 +252,7 @@ export default class Message {
     return this.#raw;
   }
   isFromMe() {
-    return this.#raw.key.fromMe;
+    return this.#raw.key.fromMe || false;
   }
   isGroup() {
     return baileys.isJidGroup(this.chat);

@@ -1,76 +1,84 @@
 import path from 'node:path';
 import util from 'node:util';
 import qrcode from 'qrcode';
-import wabotjs from './index.js';
+// In production it wouldn't be './index.js' but 'wabotjs'
+import { Bot, Utils } from './index.js';
 
-const id = '26x8bmn7';
-const datadir = path.join(process.cwd(), 'Data', id);
-const bot = new wabotjs.Bot(id, datadir);
+const id = '26x8bmn7'; // A unique identifier for the Bot.
+const datadir = path.join(process.cwd(), 'Data', id); // Directory where credentials and JID and Message cache will be stored
+const bot = new Bot(id, datadir);
 const owners = new Set<string>();
-bot.onError(async (err) => {
-  console.error(`Bot ${id} error:`, err);
-});
-bot.onOTP(async (code) => {
-  console.log(`Bot ${id} otp:`, code);
-});
-bot.onQR(async (str) => {
-  console.log(`Bot ${id} qr:`);
-  console.log(await qrcode.toString(str, { type: 'terminal', small: true }));
-});
-bot.onOpen(async (user) => {
-  const lid = wabotjs.Utils.resolveLID(user.lid, user.id);
-  if (lid) {
-    owners.add(lid);
-  }
-  console.dir(`Bot ${id} open:`, user);
-});
-bot.onClose(async (err) => {
-  console.error(`Bot ${id} close:`, err);
-});
-bot.onMessage(async (m) => {
-  console.log(`Bot ${id} message:`);
-  console.dir(m, { depth: null, hidden: false });
-});
-bot.onCommand(async (m, prefix, name, args) => {
-  try {
-    if (name === 'ping') {
-      const start = Date.now();
-      const res = await m.reply({ text: 'Pong: ..ms' });
-      const end = Date.now();
-      const ping = Math.max(0, Math.floor(end - start));
-      if (res) {
-        await res.edit({ text: `Pong: ${ping}ms` });
-      }
-      return;
+bot
+  .onError(async (err) => {
+    console.log('[Bot error]');
+    console.error(err);
+  })
+  .onQR(async (qr) => {
+    console.log('[Bot qr]');
+    console.log(await qrcode.toString(qr, { type: 'terminal', small: true }));
+  })
+  .onOTP(async (code) => {
+    console.log('[Bot otp]');
+    console.log(code);
+  })
+  .onOpen(async (user) => {
+    const lid = Utils.resolveLID(user.lid, user.id, user.phoneNumber);
+    if (lid) {
+      owners.add(lid);
     }
-    if (name === 'echo') {
-      await m.reply({ text: args.length > 0 ? args.join(' ') : 'Hello, World!' });
-      return;
-    }
-    if (name === 'eval') {
-      if (!m.sender || !owners.has(m.sender)) {
-        await m.reply({ text: 'Permission denied!' });
+    console.log('[Bot open]');
+    console.dir(user);
+  })
+  .onClose(async (err) => {
+    console.log('[Bot close]');
+    console.error(err);
+  })
+  .onMessage(async (message) => {
+    console.log('[Bot message]');
+    console.dir(message, { depth: null });
+  })
+  .onCommand(async (m, prefix, name, args) => {
+    try {
+      if (name === 'ping') {
+        const start = Date.now();
+        const res = await m.reply({ text: 'Pong: ..ms' });
+        const end = Date.now();
+        const ping = Math.max(0, Math.floor(end - start));
+        if (res) {
+          await res.edit({ text: `Pong: ${ping}ms` });
+        }
         return;
       }
-      try {
-        let out = eval(args.join(' '));
-        if (out instanceof Promise) {
-          out = await out;
-        }
-        const result = util.inspect(out, {
-          colors: false,
-          depth: null,
-        });
-        await m.reply({ text: result });
-      } catch (v) {
-        const err = wabotjs.Utils.toError(v);
-        await m.reply({ text: err.toString() });
+      if (name === 'echo') {
+        await m.reply({ text: args.length > 0 ? args.join(' ') : 'Hello, World!' });
+        return;
       }
-      return;
+      // This command is extremely dangerous; make sure only authorized people can execute it.
+      if (name === 'eval') {
+        if (!m.sender || !owners.has(m.sender)) {
+          await m.reply({ text: 'Permission denied!' });
+          return;
+        }
+        try {
+          let out = eval(args.join(' '));
+          if (out instanceof Promise) {
+            out = await out;
+          }
+          const result = util.inspect(out, {
+            colors: false,
+            depth: null,
+          });
+          await m.reply({ text: result });
+        } catch (v) {
+          const err = Utils.toError(v);
+          await m.reply({ text: err.toString() });
+        }
+        return;
+      }
+      await m.reply({ text: `The *${prefix + name}* command does not exist` });
+    } catch (v) {
+      console.error(Utils.toError(v));
     }
-    await m.reply({ text: `The *${prefix + name}* command does not exist` });
-  } catch (v) {
-    console.error(wabotjs.Utils.toError(v));
-  }
-});
+  });
+// Log in with QR code
 await bot.login();

@@ -1,7 +1,7 @@
 {
   "name": "wabotjs",
-  "description": "WhatsApp Bot JS - Required Node.js v24+",
-  "version": "1.1.0",
+  "description": "A WhatsApp bot library built on baileys and TypeScript",
+  "version": "1.1.1",
   "private": false,
   "author": {
     "name": "jzszdznzzl",
@@ -35,7 +35,8 @@
   "files": [
     "Dist/",
     "package.json",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "dev": "tsx watch Src/index.test.ts",

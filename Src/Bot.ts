@@ -101,6 +101,7 @@ export default class Bot {
   setPrefix(prefix: string) {
     Utils.assertType(prefix, 'prefix', 'string');
     this.#prefix = prefix;
+    return this;
   }
   async login(pn?: string) {
     try {
