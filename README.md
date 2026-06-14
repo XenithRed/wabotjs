@@ -13,11 +13,11 @@ A WhatsApp bot library built on `baileys` and TypeScript, with local cache suppo
 ## Installation
 
 ```bash
-npm install wabotjs
+npm install @jzszdznzzl/wabotjs
 # or
-pnpm install wabotjs
+pnpm install @jzszdznzzl/wabotjs
 # or
-yarn install wabotjs
+yarn install @jzszdznzzl/wabotjs
 ```
 
 ## Basic Usage
@@ -26,7 +26,7 @@ You can see a better example in the [Src/index.test.ts](Src/index.test.ts) file.
 
 ```ts
 import path from 'node:path';
-import { Bot } from 'wabotjs';
+import { Bot } from '@jzszdznzzl/wabotjs';
 // Optional
 // import qrcode from 'qrcode';
 

@@ -1,5 +1,5 @@
 {
-  "name": "wabotjs",
+  "name": "@jzszdznzzl/wabotjs",
   "description": "A WhatsApp bot library built on baileys and TypeScript",
   "version": "1.1.1",
   "private": false,

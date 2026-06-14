@@ -1,7 +1,7 @@
 import path from 'node:path';
 import util from 'node:util';
 import qrcode from 'qrcode';
-// In production it wouldn't be './index.js' but 'wabotjs'
+// In production it wouldn't be './index.js' but '@jzszdznzzl/wabotjs'
 import { Bot, Utils } from './index.js';
 
 const id = '26x8bmn7'; // A unique identifier for the Bot.
