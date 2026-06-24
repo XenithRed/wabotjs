@@ -1,27 +1,19 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "lib": ["ESNext"],
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["esnext"],
     "types": ["node"],
-
-    "rootDir": "Src/",
-    "outDir": "Dist/",
-
+    "rootDir": "src/",
+    "outDir": "dist/",
     "declaration": true,
-    "declarationMap": false,
-
-    "sourceMap": false,
-    "inlineSourceMap": false,
-
     "strict": true,
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true
   },
-  "include": ["Src/**/*"],
-  "exclude": ["node_modules/", "Dist/", "**/*.test.ts"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules/", "dist/", "**/*.test.ts"]
 }

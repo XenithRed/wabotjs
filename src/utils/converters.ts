@@ -13,17 +13,3 @@ export function toError(value: unknown) {
   }
   return new Error(toString(value));
 }
-export function toNumber(value: unknown) {
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (
-    typeof value === 'object' &&
-    value &&
-    'toNumber' in value &&
-    typeof value.toNumber === 'function'
-  ) {
-    return value.toNumber() as number;
-  }
-  return Number(value);
-}

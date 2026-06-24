@@ -1,12 +1,12 @@
 import ms from 'ms';
-import Utils from './index.js';
+import { assertType } from './index.js';
 
-export default class TTLCache<V> {
+export class TTLCache<V> {
   #cache = new Map<string, { expire: number; value: V }>();
   #ttl: number;
   #interval?: NodeJS.Timeout;
   constructor(ttl: number) {
-    Utils.assertType(ttl, 'ttl', 'number');
+    assertType(ttl, 'ttl', 'number');
     if (ttl < 1) {
       throw new TypeError('ttl must be a positive number');
     }
@@ -43,20 +43,20 @@ export default class TTLCache<V> {
     return this.#ttl;
   }
   set(key: string, value: V) {
-    Utils.assertType(key, 'key', 'string');
+    assertType(key, 'key', 'string');
     const now = Date.now();
     this.#cache.set(key, { expire: now + this.ttl, value });
     this.#startCleaner();
     return this;
   }
   get(key: string) {
-    Utils.assertType(key, 'key', 'string');
+    assertType(key, 'key', 'string');
     const now = Date.now();
     const cached = this.#cache.get(key);
     return cached && now < cached.expire ? cached.value : undefined;
   }
   del(key: string) {
-    Utils.assertType(key, 'key', 'string');
+    assertType(key, 'key', 'string');
     return this.#cache.delete(key);
   }
   clear() {
@@ -64,7 +64,7 @@ export default class TTLCache<V> {
     this.#stopCleaner();
   }
   has(key: string) {
-    Utils.assertType(key, 'key', 'string');
+    assertType(key, 'key', 'string');
     const now = Date.now();
     const cached = this.#cache.get(key);
     return cached && now < cached.expire ? true : false;

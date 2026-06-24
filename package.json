@@ -1,7 +1,7 @@
 {
   "name": "@jzszdznzzl/wabotjs",
   "description": "A WhatsApp bot library built on baileys and TypeScript",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "private": false,
   "author": {
     "name": "jzszdznzzl",
@@ -16,12 +16,12 @@
     "node",
     "typescript"
   ],
-  "main": "Dist/index.js",
-  "types": "Dist/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./Dist/index.js",
-      "types": "./Dist/index.d.ts"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     }
   },
   "repository": {
@@ -33,13 +33,13 @@
   },
   "homepage": "https://github.com/jzszdznzzl/wabotjs#readme",
   "files": [
-    "Dist/",
+    "dist/",
     "package.json",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "dev": "tsx watch Src/index.test.ts",
+    "dev": "tsx src/index.test.ts",
     "build": "tsc",
     "prepare": "npm run build"
   },
@@ -50,7 +50,8 @@
   "dependencies": {
     "@hapi/boom": "10.0.1",
     "baileys": "7.0.0-rc13",
-    "libphonenumber-js": "1.13.6",
+    "libphonenumber-js": "1.13.7",
+    "link-preview-js": "4.0.4",
     "long": "5.3.2",
     "ms": "2.1.3",
     "pino": "10.3.1"
