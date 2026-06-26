@@ -1,4 +1,4 @@
-import { assertType } from './index.js';
+import { assertType } from './asserts.js';
 
 export class LRUCache<V> {
   #cache = new Map<string, V>();

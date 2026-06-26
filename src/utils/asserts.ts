@@ -18,22 +18,22 @@ export function assertType<T extends keyof TypeMap>(
     const t =
       type === 'object' ? (value === null ? 'null' : value ? value.constructor.name : type) : type;
     throw new TypeError(
-      `it was expected that ${name} would be a ${expected}, but a ${t} was received`,
+      `it was expected that "${name}" would be a ${expected}, but a ${t} was received`,
     );
   }
   return true;
 }
-export function assertInstance<I>(
+export function assertInstance<T>(
   value: unknown,
   name: string,
-  constructor: new (...args: any[]) => I,
-): value is I {
+  constructor: new (...args: any[]) => T,
+): value is T {
   if (!(value instanceof constructor)) {
     const type = typeof value;
     const t =
       type === 'object' ? (type === null ? 'null' : value ? value.constructor.name : type) : type;
     throw new TypeError(
-      `it was expected that ${name} would be a ${constructor.name} instance, but an ${t} was received`,
+      `it was expected that "${name}" would be a ${constructor.name} instance, but an ${t} was received`,
     );
   }
   return true;

@@ -1,56 +1,58 @@
 import {
   downloadMediaMessage,
   getContentType,
+  getDevice,
   isJidGroup,
   jidNormalizedUser,
   WAProto,
 } from 'baileys';
 import type { WAMessage, AnyMessageContent, MiscMessageGenerationOptions } from 'baileys';
 import type { Bot, User } from './Bot.js';
-import {
-  assertType,
-  isAnyJIDEqual,
-  resolveLID,
-  resolveLIDAndPN,
-  resolvePN,
-} from './utils/index.js';
+import { assertType, isAnyJIDEqual, resolveLIDOrPN } from './utils/index.js';
 import Long from 'long';
 
+/** Represents a WhatsApp chat (group, private, or community) */
 export interface Chat {
   jid: string;
   name?: string;
   type: 'private' | 'group' | 'community' | 'unknown';
 }
+/** Represents the sender of a message */
+export interface Sender extends User {
+  device: 'ios' | 'android' | 'web' | 'desktop' | 'unknown';
+  isMe: boolean;
+}
+/** High-level wrapper for baileys messages. Abstracts the complexity of {@link WAMessage} objects and exposes straightforward utilities. */
 export class Message {
   #raw: WAMessage;
   #bot: Bot;
-  // raw.key.id
+  /** Unique message ID (`raw.key.id`) */
   id: string;
-  // chat where the message was sent
+  /** Chat where the message originated or was sent */
   chat: Chat;
-  // the user who sent the message
-  sender?: User & { isMe: boolean };
-  // the text that contained the message
+  /** Information about the user who sent the message */
+  sender?: Sender;
+  /** Readable text extracted from the message */
   text?: string;
-  // users mentioned in the message
+  /** List of users explicitly mentioned in the message */
   mentions: User[];
-  // raw.messageTimestamp
+  /** Timestamp of when the message was sent (`raw.messageTimestamp`) */
   timestamp: Long;
-  // the message type, ex: conversation, extendedTextMessage, imageMessage, etc
+  /** Internal message type according to the protocol structure ({@link WAProto.IMessage}) */
   type?: keyof WAProto.IMessage;
-  // the multimedia message MIMEType (raw.message[type].mimetype)
+  /** MIME type of the multimedia file (e.g., `image/jpeg`, `video/mp4`) */
   mimetype?: string;
-  // the multimedia message hash (raw.message[type].fileSha256)
+  /** SHA256 hash of the multimedia file */
   hash?: Uint8Array;
-  // the multimedia message key (raw.message[type].mediaKey)
+  /** Multimedia encryption key to decrypt the file */
   key?: Uint8Array;
-  // the multimedia message url (raw.message[type].url)
+  /** Direct URL of the multimedia file */
   url?: string;
-  // the multimedia message path (raw.message[type].directPath)
+  /** Direct path of the multimedia file */
   path?: string;
-  // the multimedia message size (raw.message[type].fileLength)
+  /** Multimedia file size in bytes */
   size?: Long;
-  // quoted message (raw.message[type].contextInfo.quotedMessage)
+  /** Formatted instance of the message that was quoted/responded to by this */
   quoted?: Message;
   constructor(raw: WAMessage, bot: Bot) {
     assertType(raw.key.id, 'raw.key.id', 'string');
@@ -86,76 +88,61 @@ export class Message {
   }
   #getChat(): Chat {
     if (isJidGroup(this.#raw.key.remoteJid!)) {
-      const jid = jidNormalizedUser(this.#raw.key.remoteJid!);
-      const metadata = this.#bot.cache.groups.get(jid);
+      const jid = this.#raw.key.remoteJid!;
+      const group = this.#bot.cache.groups.get(jid);
       return {
         jid,
-        name: metadata?.subject,
-        type: metadata?.isCommunity ? 'community' : 'group',
+        name: group?.subject,
+        type: group?.isCommunity ? 'community' : 'group',
       };
     }
-    const lid = resolveLID(this.#raw.key.remoteJid, this.#raw.key.remoteJidAlt);
-    if (lid) {
+    const { lid, pn } = resolveLIDOrPN(this.#raw.key.remoteJid, this.#raw.key.remoteJidAlt);
+    if (lid || pn) {
+      const user = this.#bot.cache.users.get({ lid, pn });
       return {
-        jid: lid,
-        name: this.#raw.verifiedBizName || this.#raw.pushName || undefined,
+        jid: (user?.lid || lid || pn)!,
+        name: user?.name,
         type: 'private',
       };
     }
-    const pn = resolvePN(this.#raw.key.remoteJid, this.#raw.key.remoteJidAlt);
-    if (pn) {
-      const lid = this.#bot.cache.users.get({ pn })?.lid;
-      if (lid) {
-        return {
-          jid: lid,
-          name: this.#raw.verifiedBizName || this.#raw.pushName || undefined,
-          type: 'private',
-        };
-      }
-    }
     return {
       jid: jidNormalizedUser(this.#raw.key.remoteJid!),
+      name: undefined,
       type: 'unknown',
     };
   }
-  #getSender(): (User & { isMe: boolean }) | undefined {
+  #getSender(): Sender | undefined {
     if (this.#raw.key.fromMe) {
       return {
         ...this.#bot.me,
+        device: getDevice(this.id),
         isMe: true,
       };
     }
-    const sender = resolveLIDAndPN(this.#raw.key.participant, this.#raw.key.participantAlt);
-    if (sender) {
-      return {
-        ...sender,
-        name: this.#raw.verifiedBizName || this.#raw.pushName || undefined,
-        isMe: false,
-      };
-    }
-    const lid = resolveLID(this.#raw.key.participant, this.#raw.key.participantAlt);
-    if (lid) {
-      const user = this.#bot.cache.users.get({ lid });
+    const { lid, pn } = resolveLIDOrPN(this.#raw.key.participant, this.#raw.key.participantAlt);
+    if (lid || pn) {
+      const user = this.#bot.cache.users.get({ lid, pn });
       if (user) {
         return {
           ...user,
-          name: this.#raw.verifiedBizName || this.#raw.pushName || undefined,
+          device: getDevice(this.id),
           isMe: false,
         };
       }
     }
-    const pn = resolvePN(this.#raw.key.participant, this.#raw.key.participantAlt);
-    if (pn) {
-      const user = this.#bot.cache.users.get({ pn });
-      if (user) {
-        return {
-          ...user,
-          name: this.#raw.verifiedBizName || this.#raw.pushName || undefined,
-          isMe: false,
-        };
+    if (this.chat.type === 'private') {
+      const { lid, pn } = resolveLIDOrPN(this.chat.jid);
+      if (lid || pn) {
+        const user = this.#bot.cache.users.get({ lid, pn });
+        if (user) {
+          return {
+            ...user,
+            device: getDevice(this.id),
+            isMe: false,
+          };
+        }
       }
     }
-    return;
   }
   #getText() {
     const ctn = this.#getContent(this.#raw.message);
@@ -182,15 +169,11 @@ export class Message {
     const mentions = new Set<User>();
     if ('contextInfo' in ctn && Array.isArray(ctn.contextInfo?.mentionedJid)) {
       ctn.contextInfo.mentionedJid.forEach((m) => {
-        let user: User | undefined = undefined;
-        const lid = resolveLID(m);
-        if (lid) {
-          user = this.#bot.cache.users.get({ lid });
+        const { lid, pn } = resolveLIDOrPN(m);
+        if (!lid && !pn) {
+          return;
         }
-        const pn = resolvePN(m);
-        if (pn) {
-          user = this.#bot.cache.users.get({ pn });
-        }
+        const user = this.#bot.cache.users.get({ lid, pn });
         if (user) {
           mentions.add(user);
         }
@@ -307,22 +290,32 @@ export class Message {
       return new Message(msg, this.#bot);
     }
   }
-  // the raw message returns
-  toRaw() {
+  /** Returns baileys native raw message object ({@link WAMessage}) */
+  toRaw(): Readonly<WAMessage> {
     return this.#raw;
   }
-  // download the multimedia message
+  /** Download the multimedia file for this message */
   async download() {
     if (!this.url || !this.key || !this.path) {
       throw new Error('this message is not a downloadable multimedia message');
     }
+    // If this.url, this.key, and this.path exist, it means that this cannot be undefined
     const ctn = this.#getContent(this.#raw.message!)!;
     if (typeof ctn !== 'string' && 'message' in ctn && ctn.message) {
       return await downloadMediaMessage({ key: this.#raw.key, message: ctn.message }, 'buffer', {});
     }
     return await downloadMediaMessage(this.#raw, 'buffer', {});
   }
-  // reply to the message, a shortcut for bot.sock.sendMessage()
+  /**
+   * Reply directly to this message in the same chat by quoting it automatically
+   *
+   * @example
+   * // Reply with text
+   * await msg.reply({ text: '¡Hello, World!' });
+   *
+   * // Reply with image
+   * await msg.reply({ image: { url: 'https://domain.com/image.jpeg' }, caption: '¡Hello, World!' });
+   */
   async reply(content: AnyMessageContent, options?: MiscMessageGenerationOptions) {
     const msg = await this.#bot.sock.sendMessage(this.chat.jid, content, {
       ...options,
@@ -330,22 +323,36 @@ export class Message {
     });
     return msg ? new Message(msg, this.#bot) : undefined;
   }
-  // react with an emoji to the message, a shortcut for bot.sock.sendMessage()
+  /**
+   * React to this message with an emoji
+   *
+   * @example
+   * await msg.react('👍');
+   *
+   * // remove the reaction
+   * await msg.react('');
+   */
   async react(emoji: string) {
     assertType(emoji, 'emoji', 'string');
     const msg = await this.#bot.sock.sendMessage(this.chat.jid, { react: { text: emoji } });
     return msg ? new Message(msg, this.#bot) : undefined;
   }
-  // marks the message as read, a shortcut for bot.sock.readMessages()
+  /** Mark this specific message as read */
   async read() {
     await this.#bot.sock.readMessages([this.#raw.key]);
   }
-  // deletes the message from the chat, a shortcut for bot.sock.sendMessage()
+  /** Delete this message from the chat for all participants */
   async delete() {
     const msg = await this.#bot.sock.sendMessage(this.chat.jid, { delete: this.#raw.key });
     return msg ? new Message(msg, this.#bot) : undefined;
   }
-  // edit the message if it was sent by the bot, a shortcut for bot.sock.sendMessage()
+  /**
+   * Edit the content of the current message. This only works if the original message was sent by the bot.
+   *
+   * @example
+   * const res = await msg.reply({ text: '¡Ping!' });
+   * await res?.edit({ text: '¡Pong!' });
+   */
   async edit(content: AnyMessageContent, options?: MiscMessageGenerationOptions) {
     if (!this.sender?.isMe) {
       throw new Error(

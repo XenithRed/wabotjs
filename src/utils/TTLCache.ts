@@ -1,5 +1,5 @@
 import ms from 'ms';
-import { assertType } from './index.js';
+import { assertType } from './asserts.js';
 
 export class TTLCache<V> {
   #cache = new Map<string, { expire: number; value: V }>();

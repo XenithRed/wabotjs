@@ -4,4 +4,4 @@ export * from './generics.js';
 export * from './LRUCache.js';
 export * from './TTLCache.js';
 export * from './SQLiteStore.js';
-export * from './Cache.js';
+export * from './UserCache.js';

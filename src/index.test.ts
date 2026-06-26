@@ -45,7 +45,6 @@ bot
         }
         return;
       }
-      // this command is extremely dangerous; make sure only authorized people can execute it.
       if (name === 'eval') {
         if (!m.sender || !owners.has(m.sender.lid)) {
           await m.reply({ text: 'Permission denied!' });

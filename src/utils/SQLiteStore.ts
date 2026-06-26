@@ -1,8 +1,10 @@
 import { mkdirSync, rmSync } from 'node:fs';
-import { isAbsolute, resolve, dirname, join } from 'node:path';
+import { isAbsolute, resolve, dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { assertInstance, assertType, toError, TTLCache } from './index.js';
 import ms from 'ms';
+import { TTLCache } from './TTLCache.js';
+import { assertInstance, assertType } from './asserts.js';
+import { toError } from './converters.js';
 
 export class SQLiteStore {
   #cache: TTLCache<Uint8Array>;
@@ -24,6 +26,9 @@ export class SQLiteStore {
   }
   get filepath() {
     return this.#filepath;
+  }
+  get size() {
+    return this.keys().length;
   }
   exec(sql: string) {
     if (!this.#initialized) {
