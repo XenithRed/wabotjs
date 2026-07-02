@@ -334,7 +334,9 @@ export class Message {
    */
   async react(emoji: string) {
     assertType(emoji, 'emoji', 'string');
-    const msg = await this.#bot.sock.sendMessage(this.chat.jid, { react: { text: emoji } });
+    const msg = await this.#bot.sock.sendMessage(this.chat.jid, {
+      react: { text: emoji, key: this.#raw.key },
+    });
     return msg ? new Message(msg, this.#bot) : undefined;
   }
   /** Mark this specific message as read */
