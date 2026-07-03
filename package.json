@@ -1,7 +1,7 @@
 {
   "name": "@jzszdznzzl/wabotjs",
-  "description": "A WhatsApp bot library built on baileys and TypeScript",
-  "version": "2.0.0",
+  "description": "A lightweight WhatsApp bot framework built on baileys and TypeScript.",
+  "version": "2.0.1",
   "private": false,
   "author": {
     "name": "jzszdznzzl",
@@ -34,13 +34,15 @@
   "homepage": "https://github.com/jzszdznzzl/wabotjs#readme",
   "files": [
     "dist/",
+    "docs/",
     "package.json",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "dev": "tsx src/index.test.ts",
-    "build": "tsc",
+    "build": "npm run build:docs && tsc",
+    "build:docs": "typedoc",
     "prepare": "npm run build"
   },
   "engines": {
@@ -62,6 +64,8 @@
     "@types/qrcode": "1.5.6",
     "qrcode": "1.5.4",
     "tsx": "4.22.4",
+    "typedoc": "0.28.19",
+    "typedoc-plugin-markdown": "4.12.0",
     "typescript": "6.0.3"
   }
 }

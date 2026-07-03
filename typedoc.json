@@ -1,0 +1,25 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/",
+  "plugin": ["typedoc-plugin-markdown"],
+  "readme": "none",
+  "includeVersion": true,
+  "cleanOutputDir": true,
+  "titleLink": "https://github.com/jzszdznzzl/wabotjs",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "hideGenerator": true,
+  "validation": {
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "parametersFormat": "table",
+  "propertiesFormat": "table",
+  "enumMembersFormat": "table",
+  "typeDeclarationFormat": "table",
+  "hideBreadcrumbs": false,
+  "hidePageTitle": false,
+  "githubPages": true
+}
