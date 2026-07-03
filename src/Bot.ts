@@ -18,102 +18,86 @@ import { Message } from './Message.js';
 import { Socket } from './Socket.js';
 import { Auth } from './Auth.js';
 
-/** It represents a structured WhatsApp user identity */
+/** Represents a user in the WhatsApp. */
 export interface User {
+  /** The user's local identifier. */
   lid: string;
+  /** The user's phone number. */
   pn: string;
+  /** Display name */
   name?: string;
+  /** Soon. */
+  username?: string;
 }
-/** List of core events emitted by the {@link Bot} instance */
+/** Event names for the bot. */
 export enum Events {
+  /** Event triggered when an error occurs. */
   ERROR = 'error',
+  /** Event triggered when a QR code is generated. */
   QR = 'qr',
+  /** Event triggered when a pairing code (OTP) is generated. */
   OTP = 'otp',
+  /** Event triggered when the connection is closed. */
   CLOSE = 'close',
+  /** Event triggered when the connection is opened. */
   OPEN = 'open',
+  /** Event triggered when a message is received. */
   MESSAGE = 'message',
+  /** Event triggered when a command is received. */
   COMMAND = 'command',
 }
-interface EventMap {
+/** Event map for the bot. */
+export interface EventMap {
+  /** @param err The error that occurred. */
   error: [err: Error];
+  /** @param str The generated QR code. */
   qr: [str: string];
+  /** @param code The generated pairing code (OTP). */
   otp: [code: string];
-  close: [out: Output];
-  open: [user: User];
-  message: [message: Message];
-  command: [message: Message, name: string, args: string[]];
+  /**
+   * @param out The disconnect output.
+   * @param loggedout If true, it means the session cannot be reconnected.
+   */
+  close: [out: Output, loggedout: boolean];
+  /** @param me The bot's account. */
+  open: [me: User];
+  /** @param msg The message received. */
+  message: [msg: Message];
+  /**
+   * @param msg The message that triggered the command.
+   * @param name The name of the command.
+   * @param args The arguments passed to the command.
+   */
+  command: [msg: Message, name: string, args: string[]];
 }
-/**
- * Core class
- *
- * @example
- * import { Bot, Auth, Events, jidDecode } from '@jzszdznzzl/wabotjs';
- * import { join } from 'node:path';
- * import { toString } from 'qrcode';
- *
- * const id = 'my-bot';
- * const auth = new Auth(join(process.cwd(), 'sessions', id));
- * const bot = new Bot(id, auth)
- *   .on(Events.CLOSE, (out) => {
- *     console.warn('Bot connection closed');
- *     console.dir(out, { depth: null });
- *   })
- *   .on(Events.OPEN, (user) => {
- *     console.log(`Bot connection open in ${user.name}(${jidDecode(user.pn)!.user})`);
- *   })
- *   .on(Events.QR, async (str) => {
- *     const qr = await toString(str, { type: 'terminal', small: true });
- *     console.log('QR code');
- *     console.log(qr);
- *   })
- *   .on(Events.OTP, (code) => {
- *     console.log('Pairing code');
- *     console.log(code);
- *   })
- *   .setPrefix('!')
- *   .on(Events.COMMAND, async (msg, name, args) => {
- *     try {
- *       if (['ping', 'p'].includes(name)) {
- *         await msg.reply({ text: '¡Pong!' });
- *         return;
- *       }
- *       if (['echo', 'say'].includes(name)) {
- *         await msg.reply({ text: args.length > 0 ? args.join(' ') : '¡Hello, World!' });
- *         return;
- *       }
- *       await msg.reply({ text: `The ${bot.prefix + name} command does not exist` });
- *     } catch (e) {
- *       console.warn(`Error executing the ${bot.prefix + name} command`);
- *       console.error(e);
- *     }
- *   })
- *   .on(Events.ERROR, (err) => {
- *     console.warn('An error occurred');
- *     console.error(err);
- *   });
- * await bot.login();
- */
+/** Core class for managing the WhatsApp bot. */
 export class Bot extends EventEmitter<EventMap> {
   #prefix = '/';
   #reconnectionAttempts = 0;
+  #reconnectionTimeout?: NodeJS.Timeout;
   #id: string;
   #sock?: Socket;
   #me?: User;
   #logging = false;
   #logged = false;
-  /** An instance of the {@link Auth} class that manages authentication credentials and signal keys */
+  /** The authentication state manager. */
   auth: Auth;
-  /** Unified multi-tier layer containing specific cache maps for performance optimization */
+  /** Bot cache. */
   cache: {
-    /** High-performance O(1) bi-indexed cache tracking mapped {@link User} models */
+    /** User cache. */
     users: UserCache;
-    /** LRU (Least Recently Used) cache tracking {@link GroupMetadata} structures */
+    /** Groups metadata cache. */
     groups: LRUCache<GroupMetadata>;
-    /** TTL (Time To Live) cache storing raw messages to handle structural retries */
+    /** Message cache. */
     messages: TTLCache<WAMessage>;
-    /** Utility method shortcut to completely flush and empty all three underlying cache layers */
+    /** Clear all caches. */
     flush: () => void;
   };
+  /**
+   * Creates a new instance of the Bot class.
+   * @param id The identifier for the bot.
+   * @param auth The authentication state manager.
+   */
   constructor(id: string, auth: Auth) {
     assertType(id, 'id', 'string');
     super();
@@ -142,7 +126,7 @@ export class Bot extends EventEmitter<EventMap> {
       try {
         if (upd.qr) {
           if (pn && !this.auth.creds.registered) {
-            const code = await this.sock.requestPairingCode(pn.replace(/[^0-9]/g, ''));
+            const code = await this.sock.requestPairingCode(pn);
             this.emit(Events.OTP, code);
           } else {
             this.emit(Events.QR, upd.qr);
@@ -151,12 +135,12 @@ export class Bot extends EventEmitter<EventMap> {
         if (upd.connection === 'close') {
           await this.close();
           const out = new Boom(upd.lastDisconnect?.error).output;
-          this.emit(Events.CLOSE, out);
-          if (
-            out.statusCode !== DisconnectReason.loggedOut &&
-            out.statusCode !== DisconnectReason.forbidden &&
-            out.statusCode !== 405
-          ) {
+          const loggedout =
+            out.statusCode === DisconnectReason.loggedOut ||
+            out.statusCode === DisconnectReason.forbidden ||
+            out.statusCode === 405;
+          this.emit(Events.CLOSE, out, loggedout);
+          if (!loggedout) {
             if (this.#reconnectionAttempts >= 5) {
               await this.logout(new Boom('number of reconnection attempts exceeded'));
               return;
@@ -172,7 +156,7 @@ export class Bot extends EventEmitter<EventMap> {
           return;
         }
         if (upd.connection === 'open') {
-          const me: User | undefined = resolveLIDAndPN(
+          const me = resolveLIDAndPN(
             this.sock.user?.id,
             this.sock.user?.lid,
             this.sock.user?.phoneNumber,
@@ -188,6 +172,10 @@ export class Bot extends EventEmitter<EventMap> {
           this.#logged = true;
           this.#logging = false;
           this.#reconnectionAttempts = 0;
+          if (this.#reconnectionTimeout) {
+            clearTimeout(this.#reconnectionTimeout);
+            this.#reconnectionTimeout = undefined;
+          }
           this.#me = {
             ...me,
             name: this.sock.user!.verifiedName || this.sock.user!.name,
@@ -196,13 +184,14 @@ export class Bot extends EventEmitter<EventMap> {
           this.emit(Events.OPEN, this.me);
           return;
         }
-        if (upd.connection === 'connecting') {
-          setTimeout(async () => {
+        if (upd.connection === 'connecting' && !this.#reconnectionTimeout) {
+          this.#reconnectionTimeout = setTimeout(async () => {
             if (!this.#logged) {
               await this.close(
                 new Boom(`time to log in expired`, { statusCode: DisconnectReason.loggedOut }),
               );
             }
+            this.#reconnectionTimeout = undefined;
           }, ms('60s'));
         }
       } catch (e) {
@@ -242,22 +231,18 @@ export class Bot extends EventEmitter<EventMap> {
                 name: msg.key.fromMe ? undefined : name,
               });
             } else {
-              // Do not modify the username if it was submitted by the bot
               if (name && user.name !== name && !msg.key.fromMe) {
                 user.name = name;
               }
-              // Update the bot's name if this changes
               if (name && this.me.name !== name && msg.key.fromMe) {
                 this.#me!.name = name;
               }
-              // A user's pn may change, but not their lid
               if (user.pn !== sender.pn) {
                 user.pn = sender.pn;
               }
             }
           }
           if (ups.type === 'append') {
-            // We only cache the messages sent by the bot
             this.cache.messages.set(msg.key.id, msg);
             return;
           }
@@ -270,7 +255,6 @@ export class Bot extends EventEmitter<EventMap> {
             .substring(this.#prefix.length)
             .split(/\s+/)
             .map((p, i) => (i === 0 ? p.toLowerCase() : p));
-          // We ignore messages that only have the prefix
           if (name.length < 1) {
             return;
           }
@@ -286,7 +270,12 @@ export class Bot extends EventEmitter<EventMap> {
           const participants = new Set(upd.participants.map((p) => p.id));
           const cached = this.cache.groups.get(upd.id)!;
           if (upd.action === 'remove') {
-            cached.participants = cached.participants.filter((p) => !participants.has(p.id));
+            const idx = cached.participants.findIndex((p) => participants.has(p.id));
+            if (idx < 0) {
+              return;
+            }
+            cached.participants.splice(idx, 1);
+            participants.clear();
             return;
           }
           if (upd.action === 'add') {
@@ -294,12 +283,12 @@ export class Bot extends EventEmitter<EventMap> {
               if (!cached.participants.some((cp) => participants.has(cp.id))) {
                 cached.participants.push({
                   ...up,
-                  // Just for consistency
                   lid: undefined,
                   username: undefined,
                 });
               }
             });
+            participants.clear();
             return;
           }
           if (upd.action === 'demote') {
@@ -308,6 +297,7 @@ export class Bot extends EventEmitter<EventMap> {
                 p.admin = null;
               }
             });
+            participants.clear();
             return;
           }
           if (upd.action === 'promote') {
@@ -316,6 +306,7 @@ export class Bot extends EventEmitter<EventMap> {
                 p.admin = 'admin';
               }
             });
+            participants.clear();
             return;
           }
         }
@@ -336,37 +327,45 @@ export class Bot extends EventEmitter<EventMap> {
       }
     });
   }
-  /** Gets the unique identifier assigned to this bot instance session */
+  /** Gets the bot's identifier. */
   get id() {
     return this.#id;
   }
-  /** Gets the current symbol string prefix used to match incoming commands. Defaults to `/`. */
+  /**
+   * Gets the bot's command prefix.
+   * @default '/'
+   */
   get prefix() {
     return this.#prefix;
   }
-  /** Gets the active custom connection {@link Socket} wrapper instance */
+  /** Gets the bot's socket. */
   get sock() {
     if (!this.#sock) {
       throw new Error('unlogged, calling .login() first');
     }
     return this.#sock;
   }
-  /** Gets the authenticated bot user profile object */
+  /** Gets the bot's account. */
   get me() {
     if (!this.#me) {
       throw new Error('unlogged, calling .login() first');
     }
     return this.#me;
   }
-  /** Updates the global symbol prefix used to command executions */
+  /**
+   * Sets the bot's command prefix.
+   * @param prefix The new command prefix.
+   * @returns The bot instance.
+   */
   setPrefix(prefix: string) {
     assertType(prefix, 'prefix', 'string');
     this.#prefix = prefix;
     return this;
   }
   /**
-   * Triggers the connection lifecycle setup sequence.
-   * If a phone number is provided, log in will be done using an OTP code; otherwise, it will be done using a QR code.
+   * Log in with your existing authentication state or create a new session.
+   * If a phone number is provided, the login method will be by pairing code (OTP), otherwise it will be by QR code.
+   * @param pn The phone number in E.164 format.
    */
   async login(pn?: string) {
     try {
@@ -376,9 +375,11 @@ export class Bot extends EventEmitter<EventMap> {
       this.#logging = true;
       if (pn) {
         assertType(pn, 'pn', 'string');
-        if (!libpn(pn.startsWith('+') ? pn : '+' + pn)?.isValid()) {
-          throw new TypeError('invalid phone number');
+        const parsed = libpn(pn.startsWith('+') ? pn : '+' + pn);
+        if (!parsed || !parsed.isValid()) {
+          throw new TypeError('invalid phone number provided, must be in E.164 format');
         }
+        pn = parsed.format('E.164').replace('+', '');
       }
       const waver = await fetch(
         'https://raw.githubusercontent.com/jzszdznzzl/wabotjs/refs/heads/main/wa-version.json',
@@ -401,7 +402,6 @@ export class Bot extends EventEmitter<EventMap> {
         qrTimeout: ms('30s'),
         maxMsgRetryCount: 5,
         shouldIgnoreJid: (jid) => {
-          // Do not process messages that are not from users or a group
           return !isPnUser(jid) && !isLidUser(jid) && !isJidGroup(jid);
         },
         getMessage: async (key) => {
@@ -431,16 +431,17 @@ export class Bot extends EventEmitter<EventMap> {
       this.#handleEvents(pn);
     } catch (e) {
       this.#logged = false;
-      this.#logging = false;
       throw toError(e);
+    } finally {
+      this.#logging = false;
     }
   }
-  /** It closes the current account session, completely erasing saved authentication data, closing sockets, and removing internal cache instances */
+  /**
+   * Logs out the bot and drops the authentication state.
+   * @param err Optional error to provide context for the logout.
+   */
   async logout(err?: Error) {
     try {
-      if (!this.#sock) {
-        throw new Error('unlogged');
-      }
       await this.sock.logout(err).catch(() => void 0);
       //@ts-ignore
       this.sock.ev.removeAllListeners(undefined);
@@ -455,7 +456,10 @@ export class Bot extends EventEmitter<EventMap> {
       this.#reconnectionAttempts = 0;
     }
   }
-  /** Closes the active network socket connection without removing local authentication credentials, allowing for subsequent automatic reconnections */
+  /**
+   * Closes the bot connection without dropping the authentication state.
+   * @param err Optional error to provide context for the closure.
+   */
   async close(err?: Error) {
     try {
       if (!this.#sock) {

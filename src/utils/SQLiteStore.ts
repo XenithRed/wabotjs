@@ -6,75 +6,55 @@ import { TTLCache } from './TTLCache.js';
 import { assertInstance, assertType } from './asserts.js';
 import { toError } from './converters.js';
 
+/** A simple SQLite-based key-value store with caching. */
 export class SQLiteStore {
   #cache: TTLCache<Uint8Array>;
-  #db: DatabaseSync;
-  #filepath: string;
+  #db?: DatabaseSync;
+  #path: string;
   #initializing = false;
   #initialized = false;
   #dropping = false;
   #dropped = false;
-  constructor(filepath: string) {
-    assertType(filepath, 'filepath', 'string');
-    this.#filepath = isAbsolute(filepath) ? filepath : resolve(filepath);
-    if (!this.filepath.endsWith('.db')) {
-      this.#filepath + '.db';
+  /**
+   * Creates a new SQLiteStore instance in the specified path.
+   * @param path The path to the SQLite database file.
+   */
+  constructor(path: string) {
+    assertType(path, 'path', 'string');
+    this.#path = isAbsolute(path) ? path : resolve(path);
+    if (!this.#path.endsWith('.db')) {
+      this.#path += '.db';
     }
-    mkdirSync(dirname(this.filepath), { recursive: true });
-    this.#db = new DatabaseSync(this.filepath);
     this.#cache = new TTLCache(ms('10m'));
   }
-  get filepath() {
-    return this.#filepath;
+  /** Gets the SQLite database instance. */
+  get db() {
+    if (!this.#db) {
+      throw new Error('uninitialized, calling .initialize() first');
+    }
+    return this.#db;
   }
+  /** Gets the number of items in the store. */
   get size() {
     return this.keys().length;
   }
-  exec(sql: string) {
-    if (!this.#initialized) {
-      throw new Error('uninitialized, calling .initialize() first');
-    }
-    assertType(sql, 'sql', 'string');
-    this.#db.exec(sql);
-  }
-  prepare(sql: string) {
-    if (!this.#initialized) {
-      throw new Error('uninitialized, calling .initialize() first');
-    }
-    assertType(sql, 'sql', 'string');
-    return this.#db.prepare(sql);
-  }
-  transaction<T>(fn: (...args: any[]) => T) {
-    if (!this.#initialized) {
-      throw new Error('uninitialized, calling .initialize() first');
-    }
-    assertType(fn, 'fn', 'function');
-    return (...args: any[]): T => {
-      this.exec('BEGIN TRANSACTION;');
-      try {
-        const result = fn(...args);
-        this.exec('COMMIT;');
-        return result;
-      } catch (e) {
-        this.exec('ROLLBACK;');
-        throw toError(e);
-      }
-    };
-  }
-  initialize() {
+  /** Initializes the store. */
+  init() {
     try {
       if (this.#initialized || this.#initializing) {
         return;
       }
       this.#initializing = true;
-      this.#db.exec(`PRAGMA "journal_mode" = WAL;
-PRAGMA "synchronous" = NORMAL;`);
-      this.#db.exec(`CREATE TABLE IF NOT EXISTS "values" (
+      mkdirSync(dirname(this.#path), { recursive: true });
+      this.#db = new DatabaseSync(this.#path);
+      this.db.exec('PRAGMA "journal_mode" = WAL;');
+      this.db.exec('PRAGMA "synchronous" = NORMAL;');
+      this.db.exec(`CREATE TABLE IF NOT EXISTS "values" (
   "key" TEXT NOT NULL,
   "value" BLOB NOT NULL,
   PRIMARY KEY("key")
-);
-CREATE INDEX IF NOT EXISTS "i_values_key" ON "values"("key");`);
+);`);
+      this.db.exec('CREATE INDEX IF NOT EXISTS "idx_values_key" ON "values"("key");');
       this.#initialized = true;
     } catch (e) {
       this.#initialized = false;
@@ -83,20 +63,18 @@ CREATE INDEX IF NOT EXISTS "i_values_key" ON "values"("key");`);
       this.#initializing = false;
     }
   }
+  /** Drops the store. */
   drop() {
     try {
       if (this.#dropped || this.#dropping) {
         return;
       }
-      if (!this.#initialized) {
-        throw new Error('uninitialized');
-      }
       this.#dropping = true;
       this.#cache.clear();
-      this.#db.close();
-      rmSync(this.filepath, { recursive: true, force: true });
-      rmSync(this.filepath + '-wal', { recursive: true, force: true });
-      rmSync(this.filepath + '-shm', { recursive: true, force: true });
+      this.db.close();
+      rmSync(this.#path, { recursive: true, force: true });
+      rmSync(this.#path + '-wal', { recursive: true, force: true });
+      rmSync(this.#path + '-shm', { recursive: true, force: true });
       this.#dropped = true;
     } catch (e) {
       this.#dropped = false;
@@ -106,18 +84,11 @@ CREATE INDEX IF NOT EXISTS "i_values_key" ON "values"("key");`);
       this.#initialized = false;
     }
   }
-  close() {
-    try {
-      if (!this.#initialized) {
-        throw new Error('uninitialized');
-      }
-      this.#db.close();
-    } catch (e) {
-      throw toError(e);
-    } finally {
-      this.#initialized = false;
-    }
-  }
+  /**
+   * Gets a value from the store.
+   * @param key The key for the value.
+   * @returns The value if found, otherwise undefined.
+   */
   get(key: string) {
     assertType(key, 'key', 'string');
     const cached = this.#cache.get(key);
@@ -125,7 +96,7 @@ CREATE INDEX IF NOT EXISTS "i_values_key" ON "values"("key");`);
       return cached;
     }
     const query = `SELECT "value" FROM "values" WHERE "key" = ?;`;
-    const stmt = this.prepare(query);
+    const stmt = this.db.prepare(query);
     const row = stmt.get(key);
     if (!(row?.value instanceof Uint8Array)) {
       return undefined;
@@ -133,20 +104,37 @@ CREATE INDEX IF NOT EXISTS "i_values_key" ON "values"("key");`);
     this.#cache.set(key, row.value);
     return row.value;
   }
+  /**
+   * Deletes a value from the store.
+   * @param key The key for the value to delete.
+   * @returns True if the value was found and deleted, otherwise false.
+   */
   del(key: string) {
     assertType(key, 'key', 'string');
     this.#cache.del(key);
-    this.prepare('DELETE FROM "values" WHERE "key" = ?;').run(key);
+    this.db.prepare('DELETE FROM "values" WHERE "key" = ?;').run(key);
   }
+  /**
+   * Sets a value in the store.
+   * @param key The key for the value.
+   * @param value The value to set.
+   * @returns The store instance.
+   */
   set(key: string, value: Uint8Array) {
     assertType(key, 'key', 'string');
     assertInstance(value, 'value', Uint8Array);
     this.#cache.set(key, value);
     const query = `INSERT INTO "values" ("key", "value") VALUES (?, ?)
 ON CONFLICT("key") DO UPDATE SET "value" = excluded.value;`;
-    const stmt = this.prepare(query);
+    const stmt = this.db.prepare(query);
     stmt.run(key, value);
+    return this;
   }
+  /**
+   * Checks if the store contains a value for the given key.
+   * @param key The key to check.
+   * @returns True if the value exists, otherwise false.
+   */
   has(key: string) {
     assertType(key, 'key', 'string');
     if (this.#cache.has(key)) {
@@ -154,15 +142,18 @@ ON CONFLICT("key") DO UPDATE SET "value" = excluded.value;`;
     }
     return this.get(key) !== undefined;
   }
+  /** Returns an array of all keys in the store. */
   keys() {
-    return this.entries().map((v) => v.key);
+    return this.entries().map((e) => e.key);
   }
+  /** Returns an array of all values in the store. */
   values() {
-    return this.entries().map((v) => v.value);
+    return this.entries().map((e) => e.value);
   }
+  /** Returns an array of all entries (key-value pairs) in the store. */
   entries() {
     const query = `SELECT "key", "value" FROM "values";`;
-    const stmt = this.prepare(query);
+    const stmt = this.db.prepare(query);
     const rows = stmt.all();
     return rows as { key: string; value: Uint8Array }[];
   }

@@ -1,59 +1,62 @@
-import {
-  downloadMediaMessage,
-  getContentType,
-  getDevice,
-  isJidGroup,
-  jidNormalizedUser,
-  WAProto,
-} from 'baileys';
+import { downloadMediaMessage, getDevice, isJidGroup, jidNormalizedUser, WAProto } from 'baileys';
 import type { WAMessage, AnyMessageContent, MiscMessageGenerationOptions } from 'baileys';
 import type { Bot, User } from './Bot.js';
 import { assertType, isAnyJIDEqual, resolveLIDOrPN } from './utils/index.js';
 import Long from 'long';
 
-/** Represents a WhatsApp chat (group, private, or community) */
+/** Represents a chat in the WhatsApp. */
 export interface Chat {
+  /** The chat JID. */
   jid: string;
+  /** Display name. */
   name?: string;
+  /** Deduced through the chat JID. */
   type: 'private' | 'group' | 'community' | 'unknown';
 }
-/** Represents the sender of a message */
+/** Represents the sender of a message. */
 export interface Sender extends User {
+  /** Deduced through the message ID. */
   device: 'ios' | 'android' | 'web' | 'desktop' | 'unknown';
+  /** If the message was sent by the bot. */
   isMe: boolean;
 }
-/** High-level wrapper for baileys messages. Abstracts the complexity of {@link WAMessage} objects and exposes straightforward utilities. */
+/** Represents a message in the WhatsApp. */
 export class Message {
   #raw: WAMessage;
   #bot: Bot;
-  /** Unique message ID (`raw.key.id`) */
+  /** The ID of the message. */
   id: string;
-  /** Chat where the message originated or was sent */
+  /** The chat to which the message belongs. */
   chat: Chat;
-  /** Information about the user who sent the message */
+  /** The sender of the message. */
   sender?: Sender;
-  /** Readable text extracted from the message */
+  /** The text content of the message. */
   text?: string;
-  /** List of users explicitly mentioned in the message */
+  /** The users mentioned in the message. */
   mentions: User[];
-  /** Timestamp of when the message was sent (`raw.messageTimestamp`) */
+  /** The timestamp (UNIX) of the message. */
   timestamp: Long;
-  /** Internal message type according to the protocol structure ({@link WAProto.IMessage}) */
+  /** The type of the message. */
   type?: keyof WAProto.IMessage;
-  /** MIME type of the multimedia file (e.g., `image/jpeg`, `video/mp4`) */
+  /** The MIME type of the message. */
   mimetype?: string;
-  /** SHA256 hash of the multimedia file */
+  /** The hash of the message. */
   hash?: Uint8Array;
-  /** Multimedia encryption key to decrypt the file */
+  /** The key of the message. */
   key?: Uint8Array;
-  /** Direct URL of the multimedia file */
+  /** The URL of the message. */
   url?: string;
-  /** Direct path of the multimedia file */
+  /** The path of the message. */
   path?: string;
-  /** Multimedia file size in bytes */
+  /** The size (bytes) of the message. */
   size?: Long;
-  /** Formatted instance of the message that was quoted/responded to by this */
+  /** The quoted message. */
   quoted?: Message;
+  /**
+   * Creates a new Message instance.
+   * @param raw The raw WAMessage object from baileys.
+   * @param bot The bot instance that received the message.
+   */
   constructor(raw: WAMessage, bot: Bot) {
     assertType(raw.key.id, 'raw.key.id', 'string');
     assertType(raw.key.remoteJid, 'raw.key.remoteJid', 'string');
@@ -79,12 +82,17 @@ export class Message {
       delete this.quoted.quoted;
     }
   }
-  #getContent(msg?: WAProto.IMessage | null) {
+  #getContentType(msg?: WAProto.IMessage | null) {
     if (!msg) {
       return;
     }
-    const type = getContentType(msg);
-    return type ? msg[type] : undefined;
+    return (Object.keys(msg) as (keyof WAProto.IMessage)[])
+      .filter((k) => k !== 'senderKeyDistributionMessage' && k !== 'messageContextInfo')
+      .at(0);
+  }
+  #getContent(msg?: WAProto.IMessage | null) {
+    const type = this.#getContentType(msg);
+    return msg && type ? msg[type] : undefined;
   }
   #getChat(): Chat {
     if (isJidGroup(this.#raw.key.remoteJid!)) {
@@ -185,7 +193,7 @@ export class Message {
     if (!msg) {
       return;
     }
-    const type = getContentType(msg);
+    const type = this.#getContentType(msg);
     const ctn = this.#getContent(msg);
     return typeof ctn === 'object' && ctn && 'message' in ctn ? this.#getType(ctn.message) : type;
   }
@@ -290,16 +298,18 @@ export class Message {
       return new Message(msg, this.#bot);
     }
   }
-  /** Returns baileys native raw message object ({@link WAMessage}) */
-  toRaw(): Readonly<WAMessage> {
+  /** Returns the raw WAMessage object from baileys. */
+  get raw(): Readonly<WAMessage> {
     return this.#raw;
   }
-  /** Download the multimedia file for this message */
+  /**
+   * Download the multimedia file for this message.
+   * @returns A buffer containing the downloaded file.
+   */
   async download() {
     if (!this.url || !this.key || !this.path) {
       throw new Error('this message is not a downloadable multimedia message');
     }
-    // If this.url, this.key, and this.path exist, it means that this cannot be undefined
     const ctn = this.#getContent(this.#raw.message!)!;
     if (typeof ctn !== 'string' && 'message' in ctn && ctn.message) {
       return await downloadMediaMessage({ key: this.#raw.key, message: ctn.message }, 'buffer', {});
@@ -307,14 +317,10 @@ export class Message {
     return await downloadMediaMessage(this.#raw, 'buffer', {});
   }
   /**
-   * Reply directly to this message in the same chat by quoting it automatically
-   *
-   * @example
-   * // Reply with text
-   * await msg.reply({ text: '¡Hello, World!' });
-   *
-   * // Reply with image
-   * await msg.reply({ image: { url: 'https://domain.com/image.jpeg' }, caption: '¡Hello, World!' });
+   * Reply directly to this message in the same chat by quoting it automatically.
+   * @param content The content of the reply message.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
    */
   async reply(content: AnyMessageContent, options?: MiscMessageGenerationOptions) {
     const msg = await this.#bot.sock.sendMessage(this.chat.jid, content, {
@@ -324,13 +330,9 @@ export class Message {
     return msg ? new Message(msg, this.#bot) : undefined;
   }
   /**
-   * React to this message with an emoji
-   *
-   * @example
-   * await msg.react('👍');
-   *
-   * // remove the reaction
-   * await msg.react('');
+   * React to this message with an emoji.
+   * @param emoji The emoji to react with.
+   * @returns The sent message if successful, otherwise undefined.
    */
   async react(emoji: string) {
     assertType(emoji, 'emoji', 'string');
@@ -339,21 +341,21 @@ export class Message {
     });
     return msg ? new Message(msg, this.#bot) : undefined;
   }
-  /** Mark this specific message as read */
+  /** Mark this specific message as read. */
   async read() {
     await this.#bot.sock.readMessages([this.#raw.key]);
   }
-  /** Delete this message from the chat for all participants */
+  /** Delete this message from the chat for all participants. */
   async delete() {
     const msg = await this.#bot.sock.sendMessage(this.chat.jid, { delete: this.#raw.key });
     return msg ? new Message(msg, this.#bot) : undefined;
   }
   /**
-   * Edit the content of the current message. This only works if the original message was sent by the bot.
-   *
-   * @example
-   * const res = await msg.reply({ text: '¡Ping!' });
-   * await res?.edit({ text: '¡Pong!' });
+   * Edit the content of the current message.
+   * This only works if the original message was sent by the bot.
+   * @param content The new content for the message.
+   * @param options Additional options for message generation.
+   * @returns The edited message if successful, otherwise undefined.
    */
   async edit(content: AnyMessageContent, options?: MiscMessageGenerationOptions) {
     if (!this.sender?.isMe) {

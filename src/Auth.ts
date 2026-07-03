@@ -8,32 +8,33 @@ import type {
 import { assertType, SQLiteStore, toError } from './utils/index.js';
 import { join, isAbsolute, resolve } from 'node:path';
 
-/**
- * High-performance database-driven authentication manager for Baileys.
- * Serializes and stores standard session credentials (`creds`) and E2EE token keys of various types.
- * Uses a custom SQLite database driver instead of multi-file JSON storage.
- */
+/** A class for managing authentication state. */
 export class Auth {
   #decoder = new TextDecoder('utf-8');
   #encoder = new TextEncoder();
-  #store: SQLiteStore;
   #creds?: AuthenticationCreds;
   #keys?: SignalKeyStore;
   #loaded = false;
   #loading = false;
+  /** The SQLite store for persisting authentication state. */
+  store: SQLiteStore;
+  /**
+   * Creates a new Auth instance with the specified path for the SQLite store.
+   * @param path The path to the directory where the SQLite store will be created.
+   */
   constructor(path: string) {
     assertType(path, 'path', 'string');
     const filepath = join(isAbsolute(path) ? path : resolve(path), 'auth.db');
-    this.#store = new SQLiteStore(filepath);
+    this.store = new SQLiteStore(filepath);
   }
-  /** Gets the primary {@link AuthenticationCreds} object */
+  /** Gets the authentication credentials. */
   get creds() {
     if (!this.#creds) {
       throw new Error('unloaded, calling .load() first');
     }
     return this.#creds;
   }
-  /** Gets the active pre-key crypto store interface required for End-to-End Encryption tracking */
+  /** Gets the signal keys store. */
   get keys() {
     if (!this.#keys) {
       throw new Error('unloaded, calling .load() first');
@@ -41,12 +42,14 @@ export class Auth {
     return this.#keys;
   }
   /**
-   * Gets the stored value of a key.
-   * Leverages {@link BufferJSON.reviver} to safely reconstruct native Buffer/Uint8Array instances.
+   * Gets a value from the SQLite store and parses it as JSON.
+   * @template T The expected type of the value.
+   * @param key The key of the value to retrieve.
+   * @returns The parsed value if found, otherwise undefined.
    */
   get<T>(key: string) {
     assertType(key, 'key', 'string');
-    const arr = this.#store.get(key);
+    const arr = this.store.get(key);
     if (!(arr instanceof Uint8Array)) {
       return undefined;
     }
@@ -54,28 +57,34 @@ export class Auth {
     return JSON.parse(str, BufferJSON.reviver) as T;
   }
   /**
-   * Insert a key and its value into the store.
-   * Leverages {@link BufferJSON.replacer} to safely serialize native Buffer data blobs.
+   * Sets a value in the SQLite store after serializing it to JSON.
+   * @param key The key of the value to set.
+   * @param value The value to set.
+   * @returns The Auth instance.
    */
   set(key: string, value: object | string) {
     assertType(key, 'key', 'string');
     const str = JSON.stringify(value, BufferJSON.replacer);
     const arr = this.#encoder.encode(str);
-    this.#store.set(key, arr);
+    this.store.set(key, arr);
+    return this;
   }
-  /** Deletes the stored value of a key from the store */
+  /**
+   * Deletes a value from the SQLite store.
+   * @param key The key of the value to delete.
+   */
   del(key: string) {
     assertType(key, 'key', 'string');
-    this.#store.del(key);
+    this.store.del(key);
   }
-  /** Load the authentication credentials and signal keys, or initialize them if they do not exist */
+  /** Loads the authentication state from the SQLite store. */
   load() {
     try {
       if (this.#loaded || this.#loading) {
         return;
       }
       this.#loading = true;
-      this.#store.initialize();
+      this.store.init();
       this.#creds = this.get('creds') || initAuthCreds();
       this.#keys = {
         get: (type, ids) => {
@@ -91,7 +100,8 @@ export class Auth {
           return data;
         },
         set: (data) => {
-          this.#store.transaction(() => {
+          try {
+            this.store.db.exec('BEGIN TRANSACTION;');
             (Object.keys(data) as (keyof SignalDataSet)[]).forEach((t) => {
               Object.keys(data[t] || {}).forEach((i) => {
                 const key = `${t}:${i}`;
@@ -99,7 +109,11 @@ export class Auth {
                 value ? this.set(key, value) : this.del(key);
               });
             });
-          })();
+            this.store.db.exec('COMMIT;');
+          } catch (e) {
+            this.store.db.exec('ROLLBACK;');
+            throw toError(e);
+          }
         },
       };
       this.#loaded = true;
@@ -110,20 +124,20 @@ export class Auth {
       this.#loading = false;
     }
   }
-  /** Removes authentication credentials and signal keys */
+  /** Drops the authentication state from the SQLite store. */
   drop() {
-    this.#store.drop();
+    this.store.drop();
     this.#creds = undefined;
     this.#keys = undefined;
     this.#loaded = false;
   }
-  /** Save the authentication credentials */
+  /** Saves the authentication state to the SQLite store. */
   save() {
     this.set('creds', this.creds);
   }
-  /** Close the authentication without deleting the authentication credentials and signal keys */
+  /** Closes the SQLite store. */
   close() {
-    this.#store.close();
+    this.store.db.close();
     this.#creds = undefined;
     this.#keys = undefined;
     this.#loaded = false;

@@ -9,35 +9,34 @@ const bot = new Bot(id, auth);
 const owners = new Set<string>();
 bot
   .on(Events.ERROR, (err) => {
-    console.log('[Bot error]');
+    console.warn('An error occurred:');
     console.error(err);
   })
   .on(Events.QR, async (qr) => {
-    console.log('[Bot qr]');
+    console.log('Scan this QR code:');
     console.log(await toString(qr, { type: 'terminal', small: true }));
   })
   .on(Events.OTP, (code) => {
-    console.log('[Bot otp]');
-    console.log(code);
+    console.log(`Pairing code: ${code}`);
   })
   .on(Events.OPEN, (user) => {
     owners.add(user.lid);
-    console.log('[Bot open]');
-    console.dir(user);
+    console.log(`Connection established: @${user.name} (${user.pn})`);
   })
-  .on(Events.CLOSE, (err) => {
-    console.log('[Bot close]');
-    console.error(err);
+  .on(Events.CLOSE, (out, loggedout) => {
+    console.warn(
+      `Connection closed with status code ${out.statusCode}, can it be reconnected? ${!loggedout}`,
+    );
   })
   .on(Events.MESSAGE, async (message) => {
     console.log('[Bot message]');
     console.dir(message, { depth: null });
   })
-  .on(Events.COMMAND, async (m, name, args) => {
+  .on(Events.COMMAND, async (msg, name, args) => {
     try {
       if (name === 'ping') {
         const start = Date.now();
-        const res = await m.reply({ text: 'Pong: ..ms' });
+        const res = await msg.reply({ text: 'Pong: ..ms' });
         const end = Date.now();
         const ping = Math.max(0, Math.floor(end - start));
         if (res) {
@@ -46,8 +45,8 @@ bot
         return;
       }
       if (name === 'eval') {
-        if (!m.sender || !owners.has(m.sender.lid)) {
-          await m.reply({ text: 'Permission denied!' });
+        if (!msg.sender || !owners.has(msg.sender.lid)) {
+          await msg.reply({ text: 'Permission denied!' });
           return;
         }
         try {
@@ -59,17 +58,16 @@ bot
             colors: false,
             depth: null,
           });
-          await m.reply({ text: result });
+          await msg.reply({ text: result });
         } catch (e) {
           const err = toError(e);
-          await m.reply({ text: err.toString() });
+          await msg.reply({ text: err.toString() });
         }
         return;
       }
-      await m.reply({ text: `The *${bot.prefix + name}* command does not exist` });
+      await msg.reply({ text: `The *${bot.prefix + name}* command does not exist` });
     } catch (e) {
       console.error(toError(e));
     }
   });
-// log in with OTP code
-await bot.login('595983799436');
+await bot.login();
