@@ -1,20 +1,11 @@
-<div align='center'>
+A lightweight WhatsApp bot framework built on [baileys](https://github.com/whiskeysockets/baileys) and TypeScript.
 
-# ⚡ WABotJS ⚡
+## Requirements
 
-A WhatsApp bot library built on [baileys](https://github.com/whiskeysockets/baileys) and TypeScript
-
-</div>
-
-## 📋 Requirements
-
-- Node.js >= 24
+- Node.js `>= 24`
 - `npm`, `pnpm`, or `yarn`
 
-> [!IMPORTANT]
-> You must have Node.js version v24 or higher; otherwise, you will not be able to use this library. This library requires the native module `node:sqlite` to function
-
-## 🚀 Installation
+## Installation
 
 ```bash
 npm install @jzszdznzzl/wabotjs -E
@@ -23,100 +14,84 @@ npm install @jzszdznzzl/wabotjs -E
 pnpm install @jzszdznzzl/wabotjs -E
 
 # or
-yarn install @jzszdznzzl/wabotjs -E
+yarn add @jzszdznzzl/wabotjs
 ```
 
-## 💡 Basic Usage
+## Quick Start
 
 ```ts
-import { Bot, Auth, Events, jidDecode } from '@jzszdznzzl/wabotjs';
 import { join } from 'node:path';
+import { inspect } from 'node:util';
 import { toString } from 'qrcode';
+import { Auth, Bot, Events, toError } from '@jzszdznzzl/wabotjs';
 
-const id = 'my-bot';
-const auth = new Auth(join(process.cwd(), 'sessions', id));
-const bot = new Bot(id, auth)
-  .on(Events.CLOSE, (out) => {
-    console.warn('Bot connection closed');
-    console.dir(out, { depth: null });
+const id = '26x8bmn7';
+const auth = new Auth(join(process.cwd(), 'session'));
+const bot = new Bot(id, auth);
+const owners = new Set<string>();
+bot
+  .on(Events.ERROR, (err) => {
+    console.warn('An error occurred:');
+    console.error(err);
   })
-  .on(Events.OPEN, (user) => {
-    console.log(`Bot connection open in ${user.name}(${jidDecode(user.pn)!.user})`);
-  })
-  .on(Events.QR, async (str) => {
-    const qr = await toString(str, { type: 'terminal', small: true });
-    console.log('QR code');
-    console.log(qr);
+  .on(Events.QR, async (qr) => {
+    console.log('Scan this QR code:');
+    console.log(await toString(qr, { type: 'terminal', small: true }));
   })
   .on(Events.OTP, (code) => {
-    console.log('Pairing code');
-    console.log(code);
+    console.log(`Pairing code: ${code}`);
   })
-  .setPrefix('!')
+  .on(Events.OPEN, (user) => {
+    owners.add(user.lid);
+    console.log(`Connection established: @${user.name} (${user.pn})`);
+  })
+  .on(Events.CLOSE, (out, loggedout) => {
+    console.warn(
+      `Connection closed with status code ${out.statusCode}, can it be reconnected? ${!loggedout}`,
+    );
+  })
+  .on(Events.MESSAGE, (msg) => {
+    console.log(
+      `New message received from ${msg.sender?.name} (${msg.sender?.pn}) to ${msg.chat.name} (${msg.chat.jid})`,
+    );
+  })
   .on(Events.COMMAND, async (msg, name, args) => {
     try {
-      if (['ping', 'p'].includes(name)) {
-        await msg.reply({ text: '¡Pong!' });
+      if (name === 'ping') {
+        const start = Date.now();
+        const res = await msg.reply({ text: 'Pong: ..ms' });
+        const end = Date.now();
+        const ping = Math.max(0, Math.floor(end - start));
+        if (res) {
+          await res.edit({ text: `Pong: ${ping}ms` });
+        }
         return;
       }
-      if (['echo', 'say'].includes(name)) {
-        await msg.reply({ text: args.length > 0 ? args.join(' ') : '¡Hello, World!' });
-        return;
+      if (name === 'echo') {
+        await msg.reply({ text: args.join(' ') || 'Hello, World!' });
       }
-      await msg.reply({ text: `The ${bot.prefix + name} command does not exist` });
     } catch (e) {
-      console.warn(`Error executing the ${bot.prefix + name} command`);
-      console.error(e);
+      console.error(toError(e));
     }
-  })
-  .on(Events.ERROR, (err) => {
-    console.warn('An error occurred');
-    console.error(err);
   });
 await bot.login();
 ```
 
-## 🔌 API's
+## Documentation
 
-### - Auth -> Look [Auth.ts](src/Auth.ts)
+For a deep dive into the API, available events, and advanced configurations, please check out our detailed documentation:
+[Read the Full Documentation](/docs/README.md)
 
-### - Bot -> Look [Bot.ts](src/Bot.ts)
-
-### - Message -> Look [Message.ts](src/Message.ts)
-
-### - Socket -> Look [Socket.ts](src/Socket.ts)
-
-## 🏗️ Architecture
-
-It's advisable to take a look at the internal code to better understand how it works
-
-```text
-src/
-├── utils/
-│    ├── asserts.ts
-│    ├── converters.ts
-│    ├── generics.ts
-│    ├── index.ts
-│    ├── LRUCache.ts
-│    ├── SQLiteStore.ts
-│    ├── TTLCache.ts
-│    └── UserCache.ts
-├── Auth.ts
-├── Bot.ts
-├── index.ts
-├── Message.ts
-└── Socket.ts
-```
-
-> [!CAUTION]
-> DISCLAIMER
+> ## Disclaimer
 >
-> This software is provided "as is" without warranty of any kind. WABotJS is an independent tool and holds no affiliation with WhatsApp. Meta Platforms, Inc. reserves the right to ban accounts utilizing unauthorized third-party clients. The creator [jzszdznzzl](https://github.com/jzszdznzzl) shall not be held liable for any account restrictions, bans, or repercussions stemming from the use of this library. Use at your own risk.
+> **This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with WhatsApp or any of its subsidiaries or affiliates.** The official WhatsApp website can be found at [whatsapp.com](https://whatsapp.com). "WhatsApp" as well as related names, marks, emblems, and images are registered trademarks of their respective owners.
+>
+> **Usage Warning:** WhatsApp strictly prohibits the use of automated bots or unofficial clients on its platform. By using this package, you acknowledge and agree that you do so entirely at your own risk and responsibility.
 
 <div align='center'>
 
-## 📄 License
+## License
 
-[MIT License](LICENSE)
+MIT License
 
 </div>
