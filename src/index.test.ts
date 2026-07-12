@@ -44,6 +44,20 @@ bot
         }
         return;
       }
+      if (name === 'adreply') {
+        await msg.adReply(
+          { text: args.join(' ') || 'ola w' },
+          {
+            title: 'wazin',
+            body: 'wazon',
+            thumbnailUrl: 'https://i.pinimg.com/736x/74/92/a8/7492a8700847181a564efb439759fdfd.jpg',
+            sourceUrl: 'https://github.com/jzszdznzzl/wabotjs',
+            showAdAttribution: true,
+            banner: true,
+          },
+        );
+        return;
+      }
       if (name === 'eval') {
         if (!msg.sender || !owners.has(msg.sender.lid)) {
           await msg.reply({ text: 'Permission denied!' });
