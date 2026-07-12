@@ -1,4 +1,4 @@
-[**@jzszdznzzl/wabotjs v2.0.0**](../README.md)
+[**@jzszdznzzl/wabotjs v2.0.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: LRUCache\<V\>
 
-Defined in: [utils/LRUCache.ts:7](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L7)
+Defined in: utils/LRUCache.ts:7
 
 A simple Least Recently Used (LRU) cache implementation.
 
@@ -22,7 +22,7 @@ A simple Least Recently Used (LRU) cache implementation.
 
 > **new LRUCache**\<`V`\>(`capacity`): `LRUCache`\<`V`\>
 
-Defined in: [utils/LRUCache.ts:14](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L14)
+Defined in: utils/LRUCache.ts:14
 
 Creates a new LRUCache instance with the specified capacity.
 
@@ -44,7 +44,7 @@ Creates a new LRUCache instance with the specified capacity.
 
 > **get** **size**(): `number`
 
-Defined in: [utils/LRUCache.ts:22](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L22)
+Defined in: utils/LRUCache.ts:22
 
 Gets the number of items in the cache.
 
@@ -58,7 +58,7 @@ Gets the number of items in the cache.
 
 > **clear**(): `void`
 
-Defined in: [utils/LRUCache.ts:70](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L70)
+Defined in: utils/LRUCache.ts:70
 
 Clears the cache.
 
@@ -72,7 +72,7 @@ Clears the cache.
 
 > **del**(`key`): `boolean`
 
-Defined in: [utils/LRUCache.ts:65](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L65)
+Defined in: utils/LRUCache.ts:65
 
 Deletes a value from the cache.
 
@@ -94,7 +94,7 @@ True if the value was found and deleted, otherwise false.
 
 > **entries**(): \[`string`, `V`\][]
 
-Defined in: [utils/LRUCache.ts:91](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L91)
+Defined in: utils/LRUCache.ts:91
 
 Returns an array of all entries (key-value pairs) in the cache.
 
@@ -108,7 +108,7 @@ Returns an array of all entries (key-value pairs) in the cache.
 
 > **get**(`key`): `NonNullable`\<`V`\> \| `undefined`
 
-Defined in: [utils/LRUCache.ts:50](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L50)
+Defined in: utils/LRUCache.ts:50
 
 Gets a value from the cache and marks it as recently used.
 
@@ -130,7 +130,7 @@ The value if found, otherwise undefined.
 
 > **has**(`key`): `boolean`
 
-Defined in: [utils/LRUCache.ts:78](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L78)
+Defined in: utils/LRUCache.ts:78
 
 Checks if the cache contains a value for the given key.
 
@@ -152,7 +152,7 @@ True if the value exists, otherwise false.
 
 > **keys**(): `string`[]
 
-Defined in: [utils/LRUCache.ts:83](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L83)
+Defined in: utils/LRUCache.ts:83
 
 Returns an array of all keys in the cache.
 
@@ -166,7 +166,7 @@ Returns an array of all keys in the cache.
 
 > **set**(`key`, `value`): `LRUCache`\<`V`\>
 
-Defined in: [utils/LRUCache.ts:31](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L31)
+Defined in: utils/LRUCache.ts:31
 
 Sets a value in the cache.
 
@@ -189,7 +189,7 @@ The cache instance.
 
 > **values**(): `V`[]
 
-Defined in: [utils/LRUCache.ts:87](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/LRUCache.ts#L87)
+Defined in: utils/LRUCache.ts:87
 
 Returns an array of all values in the cache.
 

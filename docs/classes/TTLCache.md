@@ -1,4 +1,4 @@
-[**@jzszdznzzl/wabotjs v2.0.0**](../README.md)
+[**@jzszdznzzl/wabotjs v2.0.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: TTLCache\<V\>
 
-Defined in: [utils/TTLCache.ts:8](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L8)
+Defined in: utils/TTLCache.ts:8
 
 A simple Time to Live (TTL) cache implementation.
 
@@ -22,7 +22,7 @@ A simple Time to Live (TTL) cache implementation.
 
 > **new TTLCache**\<`V`\>(`ttl`): `TTLCache`\<`V`\>
 
-Defined in: [utils/TTLCache.ts:16](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L16)
+Defined in: utils/TTLCache.ts:16
 
 Creates a new TTLCache instance with the specified time to live (TTL) in milliseconds.
 
@@ -44,7 +44,7 @@ Creates a new TTLCache instance with the specified time to live (TTL) in millise
 
 > **get** **size**(): `number`
 
-Defined in: [utils/TTLCache.ts:48](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L48)
+Defined in: utils/TTLCache.ts:48
 
 Gets the number of items in the cache.
 
@@ -58,7 +58,7 @@ Gets the number of items in the cache.
 
 > **clear**(): `void`
 
-Defined in: [utils/TTLCache.ts:85](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L85)
+Defined in: utils/TTLCache.ts:85
 
 Clears the cache.
 
@@ -72,7 +72,7 @@ Clears the cache.
 
 > **del**(`key`): `boolean`
 
-Defined in: [utils/TTLCache.ts:80](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L80)
+Defined in: utils/TTLCache.ts:80
 
 Deletes a value from the cache.
 
@@ -94,7 +94,7 @@ True if the value was found and deleted, otherwise false.
 
 > **entries**(): \[`string`, `V`\][]
 
-Defined in: [utils/TTLCache.ts:109](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L109)
+Defined in: utils/TTLCache.ts:109
 
 Returns an array of all entries (key-value pairs) in the cache.
 
@@ -108,7 +108,7 @@ Returns an array of all entries (key-value pairs) in the cache.
 
 > **get**(`key`): `V` \| `undefined`
 
-Defined in: [utils/TTLCache.ts:69](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L69)
+Defined in: utils/TTLCache.ts:69
 
 Gets a value from the cache.
 
@@ -130,7 +130,7 @@ The value if found, otherwise undefined.
 
 > **has**(`key`): `boolean`
 
-Defined in: [utils/TTLCache.ts:94](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L94)
+Defined in: utils/TTLCache.ts:94
 
 Checks if the cache contains a value for the given key.
 
@@ -152,7 +152,7 @@ True if the value exists, otherwise false.
 
 > **keys**(): `string`[]
 
-Defined in: [utils/TTLCache.ts:101](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L101)
+Defined in: utils/TTLCache.ts:101
 
 Returns an array of all keys in the cache.
 
@@ -166,7 +166,7 @@ Returns an array of all keys in the cache.
 
 > **set**(`key`, `value`): `TTLCache`\<`V`\>
 
-Defined in: [utils/TTLCache.ts:57](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L57)
+Defined in: utils/TTLCache.ts:57
 
 Sets a value in the cache.
 
@@ -189,7 +189,7 @@ The cache instance.
 
 > **values**(): `V`[]
 
-Defined in: [utils/TTLCache.ts:105](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/TTLCache.ts#L105)
+Defined in: utils/TTLCache.ts:105
 
 Returns an array of all values in the cache.
 

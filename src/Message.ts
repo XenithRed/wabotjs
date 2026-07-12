@@ -322,6 +322,10 @@ export class Message {
   get raw(): Readonly<WAMessage> {
     return this.#raw;
   }
+  /** Returns the raw WAMessage object from baileys. */
+  toRaw(): WAMessage {
+    return this.#raw;
+  }
   /**
    * Download the multimedia file for this message.
    * @returns A buffer containing the downloaded file.

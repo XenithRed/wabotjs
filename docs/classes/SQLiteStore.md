@@ -1,4 +1,4 @@
-[**@jzszdznzzl/wabotjs v2.0.0**](../README.md)
+[**@jzszdznzzl/wabotjs v2.0.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: SQLiteStore
 
-Defined in: [utils/SQLiteStore.ts:10](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L10)
+Defined in: utils/SQLiteStore.ts:10
 
 A simple SQLite-based key-value store with caching.
 
@@ -16,7 +16,7 @@ A simple SQLite-based key-value store with caching.
 
 > **new SQLiteStore**(`path`): `SQLiteStore`
 
-Defined in: [utils/SQLiteStore.ts:22](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L22)
+Defined in: utils/SQLiteStore.ts:22
 
 Creates a new SQLiteStore instance in the specified path.
 
@@ -38,7 +38,7 @@ Creates a new SQLiteStore instance in the specified path.
 
 > **get** **db**(): `DatabaseSync`
 
-Defined in: [utils/SQLiteStore.ts:31](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L31)
+Defined in: utils/SQLiteStore.ts:31
 
 Gets the SQLite database instance.
 
@@ -54,7 +54,7 @@ Gets the SQLite database instance.
 
 > **get** **size**(): `number`
 
-Defined in: [utils/SQLiteStore.ts:38](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L38)
+Defined in: utils/SQLiteStore.ts:38
 
 Gets the number of items in the store.
 
@@ -68,7 +68,7 @@ Gets the number of items in the store.
 
 > **del**(`key`): `void`
 
-Defined in: [utils/SQLiteStore.ts:112](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L112)
+Defined in: utils/SQLiteStore.ts:112
 
 Deletes a value from the store.
 
@@ -90,7 +90,7 @@ True if the value was found and deleted, otherwise false.
 
 > **drop**(): `void`
 
-Defined in: [utils/SQLiteStore.ts:67](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L67)
+Defined in: utils/SQLiteStore.ts:67
 
 Drops the store.
 
@@ -104,7 +104,7 @@ Drops the store.
 
 > **entries**(): `object`[]
 
-Defined in: [utils/SQLiteStore.ts:154](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L154)
+Defined in: utils/SQLiteStore.ts:154
 
 Returns an array of all entries (key-value pairs) in the store.
 
@@ -118,7 +118,7 @@ Returns an array of all entries (key-value pairs) in the store.
 
 > **get**(`key`): `Uint8Array`\<`ArrayBufferLike`\> \| `undefined`
 
-Defined in: [utils/SQLiteStore.ts:92](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L92)
+Defined in: utils/SQLiteStore.ts:92
 
 Gets a value from the store.
 
@@ -140,7 +140,7 @@ The value if found, otherwise undefined.
 
 > **has**(`key`): `boolean`
 
-Defined in: [utils/SQLiteStore.ts:138](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L138)
+Defined in: utils/SQLiteStore.ts:138
 
 Checks if the store contains a value for the given key.
 
@@ -162,7 +162,7 @@ True if the value exists, otherwise false.
 
 > **init**(): `void`
 
-Defined in: [utils/SQLiteStore.ts:42](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L42)
+Defined in: utils/SQLiteStore.ts:42
 
 Initializes the store.
 
@@ -176,7 +176,7 @@ Initializes the store.
 
 > **keys**(): `string`[]
 
-Defined in: [utils/SQLiteStore.ts:146](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L146)
+Defined in: utils/SQLiteStore.ts:146
 
 Returns an array of all keys in the store.
 
@@ -190,7 +190,7 @@ Returns an array of all keys in the store.
 
 > **set**(`key`, `value`): `SQLiteStore`
 
-Defined in: [utils/SQLiteStore.ts:123](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L123)
+Defined in: utils/SQLiteStore.ts:123
 
 Sets a value in the store.
 
@@ -213,7 +213,7 @@ The store instance.
 
 > **values**(): `Uint8Array`\<`ArrayBufferLike`\>[]
 
-Defined in: [utils/SQLiteStore.ts:150](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/SQLiteStore.ts#L150)
+Defined in: utils/SQLiteStore.ts:150
 
 Returns an array of all values in the store.
 

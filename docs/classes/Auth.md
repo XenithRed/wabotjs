@@ -1,4 +1,4 @@
-[**@jzszdznzzl/wabotjs v2.0.0**](../README.md)
+[**@jzszdznzzl/wabotjs v2.0.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: Auth
 
-Defined in: [Auth.ts:12](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L12)
+Defined in: Auth.ts:12
 
 A class for managing authentication state.
 
@@ -16,7 +16,7 @@ A class for managing authentication state.
 
 > **new Auth**(`path`): `Auth`
 
-Defined in: [Auth.ts:25](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L25)
+Defined in: Auth.ts:25
 
 Creates a new Auth instance with the specified path for the SQLite store.
 
@@ -34,7 +34,7 @@ Creates a new Auth instance with the specified path for the SQLite store.
 
 | Property | Type | Description | Defined in |
 | ------ | ------ | ------ | ------ |
-| <a id="store"></a> `store` | [`SQLiteStore`](SQLiteStore.md) | The SQLite store for persisting authentication state. | [Auth.ts:20](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L20) |
+| <a id="store"></a> `store` | [`SQLiteStore`](SQLiteStore.md) | The SQLite store for persisting authentication state. | Auth.ts:20 |
 
 ## Accessors
 
@@ -44,7 +44,7 @@ Creates a new Auth instance with the specified path for the SQLite store.
 
 > **get** **creds**(): `AuthenticationCreds`
 
-Defined in: [Auth.ts:31](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L31)
+Defined in: Auth.ts:31
 
 Gets the authentication credentials.
 
@@ -60,7 +60,7 @@ Gets the authentication credentials.
 
 > **get** **keys**(): `SignalKeyStore`
 
-Defined in: [Auth.ts:38](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L38)
+Defined in: Auth.ts:38
 
 Gets the signal keys store.
 
@@ -74,7 +74,7 @@ Gets the signal keys store.
 
 > **close**(): `void`
 
-Defined in: [Auth.ts:139](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L139)
+Defined in: Auth.ts:139
 
 Closes the SQLite store.
 
@@ -88,7 +88,7 @@ Closes the SQLite store.
 
 > **del**(`key`): `void`
 
-Defined in: [Auth.ts:76](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L76)
+Defined in: Auth.ts:76
 
 Deletes a value from the SQLite store.
 
@@ -108,7 +108,7 @@ Deletes a value from the SQLite store.
 
 > **drop**(): `void`
 
-Defined in: [Auth.ts:128](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L128)
+Defined in: Auth.ts:128
 
 Drops the authentication state from the SQLite store.
 
@@ -122,7 +122,7 @@ Drops the authentication state from the SQLite store.
 
 > **get**\<`T`\>(`key`): `T` \| `undefined`
 
-Defined in: [Auth.ts:50](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L50)
+Defined in: Auth.ts:50
 
 Gets a value from the SQLite store and parses it as JSON.
 
@@ -150,7 +150,7 @@ The parsed value if found, otherwise undefined.
 
 > **load**(): `void`
 
-Defined in: [Auth.ts:81](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L81)
+Defined in: Auth.ts:81
 
 Loads the authentication state from the SQLite store.
 
@@ -164,7 +164,7 @@ Loads the authentication state from the SQLite store.
 
 > **save**(): `void`
 
-Defined in: [Auth.ts:135](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L135)
+Defined in: Auth.ts:135
 
 Saves the authentication state to the SQLite store.
 
@@ -178,7 +178,7 @@ Saves the authentication state to the SQLite store.
 
 > **set**(`key`, `value`): `Auth`
 
-Defined in: [Auth.ts:65](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Auth.ts#L65)
+Defined in: Auth.ts:65
 
 Sets a value in the SQLite store after serializing it to JSON.
 

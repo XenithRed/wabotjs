@@ -1,4 +1,4 @@
-[**@jzszdznzzl/wabotjs v2.0.0**](../README.md)
+[**@jzszdznzzl/wabotjs v2.0.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: Socket
 
-Defined in: [Socket.ts:8](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Socket.ts#L8)
+Defined in: Socket.ts:8
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [Socket.ts:8](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee5
 
 > **new Socket**(`config`): `Socket`
 
-Defined in: [Socket.ts:16](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Socket.ts#L16)
+Defined in: Socket.ts:16
 
 Creates a new Socket instance.
 
@@ -42,7 +42,7 @@ Omit\<WASocket, 'end' \| 'logout' \| 'authState'\>.constructor
 
 > **end**(`err?`): `Promise`\<`void`\>
 
-Defined in: [Socket.ts:22](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Socket.ts#L22)
+Defined in: Socket.ts:22
 
 #### Parameters
 
@@ -60,7 +60,7 @@ Defined in: [Socket.ts:22](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee
 
 > **logout**(`err?`): `Promise`\<`void`\>
 
-Defined in: [Socket.ts:25](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Socket.ts#L25)
+Defined in: Socket.ts:25
 
 #### Parameters
 

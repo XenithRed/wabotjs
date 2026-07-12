@@ -1,4 +1,4 @@
-[**@jzszdznzzl/wabotjs v2.0.0**](../README.md)
+[**@jzszdznzzl/wabotjs v2.0.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: Bot
 
-Defined in: [Bot.ts:74](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L74)
+Defined in: Bot.ts:74
 
 Core class for managing the WhatsApp bot.
 
@@ -20,7 +20,7 @@ Core class for managing the WhatsApp bot.
 
 > **new Bot**(`id`, `auth`): `Bot`
 
-Defined in: [Bot.ts:101](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L101)
+Defined in: Bot.ts:101
 
 Creates a new instance of the Bot class.
 
@@ -43,12 +43,12 @@ Creates a new instance of the Bot class.
 
 | Property | Type | Description | Defined in |
 | ------ | ------ | ------ | ------ |
-| <a id="auth"></a> `auth` | [`Auth`](Auth.md) | The authentication state manager. | [Bot.ts:84](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L84) |
-| <a id="cache"></a> `cache` | `object` | Bot cache. | [Bot.ts:86](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L86) |
-| `cache.flush` | () => `void` | Clear all caches. | [Bot.ts:94](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L94) |
-| `cache.groups` | [`LRUCache`](LRUCache.md)\<`GroupMetadata`\> | Groups metadata cache. | [Bot.ts:90](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L90) |
-| `cache.messages` | [`TTLCache`](TTLCache.md)\<`WAMessage`\> | Message cache. | [Bot.ts:92](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L92) |
-| `cache.users` | [`UserCache`](UserCache.md) | User cache. | [Bot.ts:88](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L88) |
+| <a id="auth"></a> `auth` | [`Auth`](Auth.md) | The authentication state manager. | Bot.ts:84 |
+| <a id="cache"></a> `cache` | `object` | Bot cache. | Bot.ts:86 |
+| `cache.flush` | () => `void` | Clear all caches. | Bot.ts:94 |
+| `cache.groups` | [`LRUCache`](LRUCache.md)\<`GroupMetadata`\> | Groups metadata cache. | Bot.ts:90 |
+| `cache.messages` | [`TTLCache`](TTLCache.md)\<`WAMessage`\> | Message cache. | Bot.ts:92 |
+| `cache.users` | [`UserCache`](UserCache.md) | User cache. | Bot.ts:88 |
 
 ## Accessors
 
@@ -58,7 +58,7 @@ Creates a new instance of the Bot class.
 
 > **get** **id**(): `string`
 
-Defined in: [Bot.ts:331](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L331)
+Defined in: Bot.ts:331
 
 Gets the bot's identifier.
 
@@ -74,7 +74,7 @@ Gets the bot's identifier.
 
 > **get** **me**(): [`User`](../interfaces/User.md)
 
-Defined in: [Bot.ts:349](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L349)
+Defined in: Bot.ts:349
 
 Gets the bot's account.
 
@@ -90,7 +90,7 @@ Gets the bot's account.
 
 > **get** **prefix**(): `string`
 
-Defined in: [Bot.ts:338](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L338)
+Defined in: Bot.ts:338
 
 Gets the bot's command prefix.
 
@@ -112,7 +112,7 @@ Gets the bot's command prefix.
 
 > **get** **sock**(): [`Socket`](Socket.md)
 
-Defined in: [Bot.ts:342](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L342)
+Defined in: Bot.ts:342
 
 Gets the bot's socket.
 
@@ -126,7 +126,7 @@ Gets the bot's socket.
 
 > **close**(`err?`): `Promise`\<`void`\>
 
-Defined in: [Bot.ts:463](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L463)
+Defined in: Bot.ts:463
 
 Closes the bot connection without dropping the authentication state.
 
@@ -146,7 +146,7 @@ Closes the bot connection without dropping the authentication state.
 
 > **login**(`pn?`): `Promise`\<`void`\>
 
-Defined in: [Bot.ts:370](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L370)
+Defined in: Bot.ts:370
 
 Log in with your existing authentication state or create a new session.
 If a phone number is provided, the login method will be by pairing code (OTP), otherwise it will be by QR code.
@@ -167,7 +167,7 @@ If a phone number is provided, the login method will be by pairing code (OTP), o
 
 > **logout**(`err?`): `Promise`\<`void`\>
 
-Defined in: [Bot.ts:443](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L443)
+Defined in: Bot.ts:443
 
 Logs out the bot and drops the authentication state.
 
@@ -187,7 +187,7 @@ Logs out the bot and drops the authentication state.
 
 > **setPrefix**(`prefix`): `Bot`
 
-Defined in: [Bot.ts:360](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/Bot.ts#L360)
+Defined in: Bot.ts:360
 
 Sets the bot's command prefix.
 

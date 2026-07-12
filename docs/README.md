@@ -1,8 +1,8 @@
-**@jzszdznzzl/wabotjs v2.0.0**
+**@jzszdznzzl/wabotjs v2.0.1**
 
 ***
 
-# @jzszdznzzl/wabotjs v2.0.0
+# @jzszdznzzl/wabotjs v2.0.1
 
 ## Enumerations
 
@@ -23,6 +23,7 @@
 
 - [Chat](interfaces/Chat.md)
 - [EventMap](interfaces/EventMap.md)
+- [ExternalAdReplyOptions](interfaces/ExternalAdReplyOptions.md)
 - [Sender](interfaces/Sender.md)
 - [User](interfaces/User.md)
 

@@ -1,4 +1,4 @@
-[**@jzszdznzzl/wabotjs v2.0.0**](../README.md)
+[**@jzszdznzzl/wabotjs v2.0.1**](../README.md)
 
 ***
 
@@ -6,7 +6,7 @@
 
 # Class: UserCache
 
-Defined in: [utils/UserCache.ts:6](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L6)
+Defined in: utils/UserCache.ts:6
 
 An in-memory cache for users.
 
@@ -16,7 +16,7 @@ An in-memory cache for users.
 
 > **new UserCache**(): `UserCache`
 
-Defined in: [utils/UserCache.ts:8](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L8)
+Defined in: utils/UserCache.ts:8
 
 #### Returns
 
@@ -30,7 +30,7 @@ Defined in: [utils/UserCache.ts:8](https://github.com/jzszdznzzl/wabotjs/blob/f3
 
 > **get** **size**(): `number`
 
-Defined in: [utils/UserCache.ts:10](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L10)
+Defined in: utils/UserCache.ts:10
 
 Gets the number of items in the cache.
 
@@ -44,7 +44,7 @@ Gets the number of items in the cache.
 
 > **clear**(): `void`
 
-Defined in: [utils/UserCache.ts:60](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L60)
+Defined in: utils/UserCache.ts:60
 
 Clears the cache.
 
@@ -58,7 +58,7 @@ Clears the cache.
 
 > **del**(`user`): `boolean`
 
-Defined in: [utils/UserCache.ts:50](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L50)
+Defined in: utils/UserCache.ts:50
 
 Deletes a user from the cache by LID or PN.
 
@@ -80,7 +80,7 @@ True if the user was found and deleted, otherwise false.
 
 > **entries**(): \[`string`, [`User`](../interfaces/User.md)\][]
 
-Defined in: [utils/UserCache.ts:86](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L86)
+Defined in: utils/UserCache.ts:86
 
 Returns an array of all entries (key-value pairs) in the cache.
 
@@ -94,7 +94,7 @@ Returns an array of all entries (key-value pairs) in the cache.
 
 > **get**(`user`): [`User`](../interfaces/User.md) \| `undefined`
 
-Defined in: [utils/UserCache.ts:36](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L36)
+Defined in: utils/UserCache.ts:36
 
 Gets a user from the cache by LID or PN.
 
@@ -116,7 +116,7 @@ The user if found, otherwise undefined.
 
 > **has**(`user`): `boolean`
 
-Defined in: [utils/UserCache.ts:68](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L68)
+Defined in: utils/UserCache.ts:68
 
 Checks if the cache contains a user by LID or PN.
 
@@ -138,7 +138,7 @@ True if the user exists, otherwise false.
 
 > **keys**(): `string`[]
 
-Defined in: [utils/UserCache.ts:78](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L78)
+Defined in: utils/UserCache.ts:78
 
 Returns an array of all keys in the cache.
 
@@ -152,7 +152,7 @@ Returns an array of all keys in the cache.
 
 > **set**(`user`): `UserCache`
 
-Defined in: [utils/UserCache.ts:18](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L18)
+Defined in: utils/UserCache.ts:18
 
 Sets a user in the cache.
 
@@ -174,7 +174,7 @@ The cache instance.
 
 > **values**(): [`User`](../interfaces/User.md)[]
 
-Defined in: [utils/UserCache.ts:82](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/UserCache.ts#L82)
+Defined in: utils/UserCache.ts:82
 
 Returns an array of all values in the cache.
 

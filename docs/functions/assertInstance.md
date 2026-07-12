@@ -1,4 +1,4 @@
-[**@jzszdznzzl/wabotjs v2.0.0**](../README.md)
+[**@jzszdznzzl/wabotjs v2.0.1**](../README.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **assertInstance**\<`T`\>(`value`, `name`, `constructor`): `value is T`
 
-Defined in: [utils/asserts.ts:40](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/asserts.ts#L40)
+Defined in: utils/asserts.ts:40
 
 Asserts that a value is an instance of a specific constructor. This function will throw a TypeError if the value is not an instance of the expected constructor.
 

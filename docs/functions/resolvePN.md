@@ -1,4 +1,4 @@
-[**@jzszdznzzl/wabotjs v2.0.0**](../README.md)
+[**@jzszdznzzl/wabotjs v2.0.1**](../README.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **resolvePN**(...`args`): `string` \| `undefined`
 
-Defined in: [utils/generics.ts:41](https://github.com/jzszdznzzl/wabotjs/blob/f328acb0ee54f3fb8d455b21e446a61667279f4d/src/utils/generics.ts#L41)
+Defined in: utils/generics.ts:41
 
 Resolves a PN from the given arguments.
 
