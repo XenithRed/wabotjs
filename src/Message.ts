@@ -4,6 +4,26 @@ import type { Bot, User } from './Bot.js';
 import { assertType, isAnyJIDEqual, resolveLIDOrPN } from './utils/index.js';
 import Long from 'long';
 
+/** Options for an external ad reply. */
+export interface ExternalAdReplyOptions {
+  /** The title of the ad reply. */
+  title: string;
+  /** The body of the ad reply. */
+  body?: string;
+  /** The thumbnail URL of the ad reply. */
+  thumbnailUrl?: string;
+  /** The media type of the ad reply (1 = image, 2 = video, 3 = audio). */
+  mediaType?: number;
+  /** The source URL of the ad reply. */
+  sourceUrl?: string;
+  /** Whether to render a larger thumbnail (banner style). */
+  renderLargerThumbnail?: boolean;
+  /** Whether to show ad attribution. */
+  showAdAttribution?: boolean;
+  /** If true, renders the thumbnail as a large banner with mediaType 1 (image). */
+  banner?: boolean;
+}
+
 /** Represents a chat in the WhatsApp. */
 export interface Chat {
   /** The chat JID. */
@@ -373,6 +393,37 @@ export class Message {
         ...options,
         quoted: this.#raw,
       },
+    );
+    return msg ? new Message(msg, this.#bot) : undefined;
+  }
+  /**
+   * Reply to this message with an external ad reply (like Baileys mods).
+   * @param content The message content (text, image, etc.).
+   * @param adReply The external ad reply options.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async adReply(
+    content: AnyMessageContent,
+    adReply: ExternalAdReplyOptions,
+    options?: MiscMessageGenerationOptions,
+  ) {
+    const contextInfo = {
+      ...((content as Record<string, unknown>)?.contextInfo as Record<string, unknown>),
+      externalAdReply: {
+        title: adReply.title,
+        body: adReply.body,
+        thumbnailUrl: adReply.thumbnailUrl,
+        mediaType: adReply.banner ? 1 : adReply.mediaType,
+        sourceUrl: adReply.sourceUrl,
+        renderLargerThumbnail: adReply.banner ? true : adReply.renderLargerThumbnail,
+        showAdAttribution: adReply.showAdAttribution,
+      },
+    };
+    const msg = await this.#bot.sock.sendMessage(
+      this.chat.jid,
+      { ...content, contextInfo } as AnyMessageContent,
+      { ...options, quoted: this.#raw },
     );
     return msg ? new Message(msg, this.#bot) : undefined;
   }
