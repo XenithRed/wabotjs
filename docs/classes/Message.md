@@ -16,7 +16,7 @@ Represents a message in the WhatsApp.
 
 > **new Message**(`raw`, `bot`): `Message`
 
-Defined in: Message.ts:80
+Defined in: Message.ts:82
 
 Creates a new Message instance.
 
@@ -36,19 +36,20 @@ Creates a new Message instance.
 | Property | Type | Description | Defined in |
 | ------ | ------ | ------ | ------ |
 | <a id="chat"></a> `chat` | [`Chat`](../interfaces/Chat.md) | The chat to which the message belongs. | Message.ts:50 |
-| <a id="hash"></a> `hash?` | `Uint8Array`\<`ArrayBufferLike`\> | The hash of the message. | Message.ts:64 |
+| <a id="hash"></a> `hash?` | `Uint8Array`\<`ArrayBufferLike`\> | The hash of the message. | Message.ts:66 |
 | <a id="id"></a> `id` | `string` | The ID of the message. | Message.ts:48 |
-| <a id="key"></a> `key?` | `Uint8Array`\<`ArrayBufferLike`\> | The key of the message. | Message.ts:66 |
-| <a id="mentions"></a> `mentions` | [`User`](../interfaces/User.md)[] | The users mentioned in the message. | Message.ts:56 |
-| <a id="mimetype"></a> `mimetype?` | `string` | The MIME type of the message. | Message.ts:62 |
-| <a id="path"></a> `path?` | `string` | The path of the message. | Message.ts:70 |
-| <a id="quoted"></a> `quoted?` | `Message` | The quoted message. | Message.ts:74 |
+| <a id="key"></a> `key?` | `Uint8Array`\<`ArrayBufferLike`\> | The key of the message. | Message.ts:68 |
+| <a id="mentions"></a> `mentions` | [`User`](../interfaces/User.md)[] | The users mentioned in the message. | Message.ts:58 |
+| <a id="mimetype"></a> `mimetype?` | `string` | The MIME type of the message. | Message.ts:64 |
+| <a id="path"></a> `path?` | `string` | The path of the message. | Message.ts:72 |
+| <a id="quoted"></a> `quoted?` | `Message` | The quoted message. | Message.ts:76 |
 | <a id="sender"></a> `sender?` | [`Sender`](../interfaces/Sender.md) | The sender of the message. | Message.ts:52 |
-| <a id="size"></a> `size?` | `Long` | The size (bytes) of the message. | Message.ts:72 |
-| <a id="text"></a> `text?` | `string` | The text content of the message. | Message.ts:54 |
-| <a id="timestamp"></a> `timestamp` | `Long` | The timestamp (UNIX) of the message. | Message.ts:58 |
-| <a id="type"></a> `type?` | keyof IMessage | The type of the message. | Message.ts:60 |
-| <a id="url"></a> `url?` | `string` | The URL of the message. | Message.ts:68 |
+| <a id="senderjid"></a> `senderJid` | `string` | The sender JID as a plain string for quick comparisons. | Message.ts:54 |
+| <a id="size"></a> `size?` | `Long` | The size (bytes) of the message. | Message.ts:74 |
+| <a id="text"></a> `text?` | `string` | The text content of the message. | Message.ts:56 |
+| <a id="timestamp"></a> `timestamp` | `Long` | The timestamp (UNIX) of the message. | Message.ts:60 |
+| <a id="type"></a> `type?` | keyof IMessage | The type of the message. | Message.ts:62 |
+| <a id="url"></a> `url?` | `string` | The URL of the message. | Message.ts:70 |
 
 ## Accessors
 
@@ -58,7 +59,7 @@ Creates a new Message instance.
 
 > **get** **raw**(): `Readonly`\<`WAMessage`\>
 
-Defined in: Message.ts:322
+Defined in: Message.ts:336
 
 Returns the raw WAMessage object from baileys.
 
@@ -72,7 +73,7 @@ Returns the raw WAMessage object from baileys.
 
 > **adReply**(`content`, `adReply`, `options?`): `Promise`\<`Message` \| `undefined`\>
 
-Defined in: Message.ts:410
+Defined in: Message.ts:425
 
 Reply to this message with an external ad reply (like Baileys mods).
 
@@ -96,7 +97,7 @@ The sent message if successful, otherwise undefined.
 
 > **delete**(): `Promise`\<`Message` \| `undefined`\>
 
-Defined in: Message.ts:373
+Defined in: Message.ts:388
 
 Delete this message from the chat for all participants.
 
@@ -110,7 +111,7 @@ Delete this message from the chat for all participants.
 
 > **download**(): `Promise`\<`Buffer`\<`ArrayBufferLike`\>\>
 
-Defined in: Message.ts:333
+Defined in: Message.ts:347
 
 Download the multimedia file for this message.
 
@@ -126,7 +127,7 @@ A buffer containing the downloaded file.
 
 > **edit**(`content`, `options?`): `Promise`\<`Message` \| `undefined`\>
 
-Defined in: Message.ts:384
+Defined in: Message.ts:399
 
 Edit the content of the current message.
 This only works if the original message was sent by the bot.
@@ -146,11 +147,53 @@ The edited message if successful, otherwise undefined.
 
 ***
 
+### forward()
+
+> **forward**(`jid`): `Promise`\<`Message` \| `undefined`\>
+
+Defined in: Message.ts:463
+
+Forward this message to another chat.
+
+#### Parameters
+
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `jid` | `string` | The JID of the destination chat. |
+
+#### Returns
+
+`Promise`\<`Message` \| `undefined`\>
+
+The forwarded message if successful, otherwise undefined.
+
+***
+
+### pin()
+
+> **pin**(`pin?`): `Promise`\<`void`\>
+
+Defined in: Message.ts:472
+
+Pin or unpin this message in the current chat.
+
+#### Parameters
+
+| Parameter | Type | Default value | Description |
+| ------ | ------ | ------ | ------ |
+| `pin` | `boolean` | `true` | Whether to pin (true) or unpin (false) the message. |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
 ### react()
 
 > **react**(`emoji`): `Promise`\<`Message` \| `undefined`\>
 
-Defined in: Message.ts:361
+Defined in: Message.ts:372
 
 React to this message with an emoji.
 
@@ -168,11 +211,25 @@ The sent message if successful, otherwise undefined.
 
 ***
 
+### reactConfirm()
+
+> **reactConfirm**(): `Promise`\<`Message` \| `undefined`\>
+
+Defined in: Message.ts:380
+
+React to this message with a confirmation emoji (✅).
+
+#### Returns
+
+`Promise`\<`Message` \| `undefined`\>
+
+***
+
 ### read()
 
 > **read**(): `Promise`\<`void`\>
 
-Defined in: Message.ts:369
+Defined in: Message.ts:384
 
 Mark this specific message as read.
 
@@ -186,7 +243,7 @@ Mark this specific message as read.
 
 > **reply**(`content`, `options?`): `Promise`\<`Message` \| `undefined`\>
 
-Defined in: Message.ts:349
+Defined in: Message.ts:360
 
 Reply directly to this message in the same chat by quoting it automatically.
 
@@ -205,11 +262,31 @@ The sent message if successful, otherwise undefined.
 
 ***
 
+### star()
+
+> **star**(`star?`): `Promise`\<`void`\>
+
+Defined in: Message.ts:479
+
+Star or unstar this message.
+
+#### Parameters
+
+| Parameter | Type | Default value | Description |
+| ------ | ------ | ------ | ------ |
+| `star` | `boolean` | `true` | Whether to star (true) or unstar (false) the message. |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
 ### toRaw()
 
 > **toRaw**(): `WAMessage`
 
-Defined in: Message.ts:326
+Defined in: Message.ts:340
 
 Returns the raw WAMessage object from baileys.
 

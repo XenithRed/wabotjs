@@ -6,7 +6,7 @@
 
 # Interface: User
 
-Defined in: Bot.ts:22
+Defined in: Bot.ts:24
 
 Represents a user in the WhatsApp.
 
@@ -18,7 +18,7 @@ Represents a user in the WhatsApp.
 
 | Property | Type | Description | Defined in |
 | ------ | ------ | ------ | ------ |
-| <a id="lid"></a> `lid` | `string` | The user's local identifier. | Bot.ts:24 |
-| <a id="name"></a> `name?` | `string` | Display name | Bot.ts:28 |
-| <a id="pn"></a> `pn` | `string` | The user's phone number. | Bot.ts:26 |
-| <a id="username"></a> `username?` | `string` | Soon. | Bot.ts:30 |
+| <a id="lid"></a> `lid` | `string` | The user's local identifier. | Bot.ts:26 |
+| <a id="name"></a> `name?` | `string` | Display name | Bot.ts:30 |
+| <a id="pn"></a> `pn` | `string` | The user's phone number. | Bot.ts:28 |
+| <a id="username"></a> `username?` | `string` | Soon. | Bot.ts:32 |

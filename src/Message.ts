@@ -1,5 +1,5 @@
 import { downloadMediaMessage, getDevice, isJidGroup, jidNormalizedUser, WAProto } from 'baileys';
-import type { WAMessage, AnyMessageContent, MiscMessageGenerationOptions } from 'baileys';
+import type { WAMessage, AnyMessageContent, MiscMessageGenerationOptions, WAMediaUpload } from 'baileys';
 import type { Bot, User } from './Bot.js';
 import { assertType, isAnyJIDEqual, resolveLIDOrPN } from './utils/index.js';
 import Long from 'long';
@@ -50,6 +50,8 @@ export class Message {
   chat: Chat;
   /** The sender of the message. */
   sender?: Sender;
+  /** The sender JID as a plain string for quick comparisons. */
+  senderJid: string;
   /** The text content of the message. */
   text?: string;
   /** The users mentioned in the message. */
@@ -85,6 +87,7 @@ export class Message {
     this.id = raw.key.id!;
     this.chat = this.#getChat();
     this.sender = this.#getSender();
+    this.senderJid = this.#getSenderJid();
     this.text = this.#getText();
     this.mentions = this.#getMentions();
     this.timestamp = Long.fromValue(raw.messageTimestamp || Math.floor(Date.now() / 1000));
@@ -171,6 +174,17 @@ export class Message {
         }
       }
     }
+  }
+  #getSenderJid(): string {
+    if (this.#raw.key.fromMe) {
+      return this.#bot.me.lid || this.#bot.me.pn;
+    }
+    const { lid, pn } = resolveLIDOrPN(this.#raw.key.participant, this.#raw.key.participantAlt);
+    if (lid || pn) {
+      const user = this.#bot.cache.users.get({ lid, pn });
+      return user?.lid || user?.pn || lid || pn || '';
+    }
+    return this.chat.jid;
   }
   #getText() {
     const ctn = this.#getContent(this.#raw.message);
@@ -331,11 +345,8 @@ export class Message {
    * @returns A buffer containing the downloaded file.
    */
   async download() {
-    if (!this.url || !this.key || !this.path) {
-      throw new Error('this message is not a downloadable multimedia message');
-    }
-    const ctn = this.#getContent(this.#raw.message!)!;
-    if (typeof ctn !== 'string' && 'message' in ctn && ctn.message) {
+    const ctn = this.#raw.message ? this.#getContent(this.#raw.message) : undefined;
+    if (ctn && typeof ctn !== 'string' && 'message' in ctn && ctn.message) {
       return await downloadMediaMessage({ key: this.#raw.key, message: ctn.message }, 'buffer', {});
     }
     return await downloadMediaMessage(this.#raw, 'buffer', {});
@@ -364,6 +375,10 @@ export class Message {
       react: { text: emoji, key: this.#raw.key },
     });
     return msg ? new Message(msg, this.#bot) : undefined;
+  }
+  /** React to this message with a confirmation emoji (✅). */
+  async reactConfirm() {
+    return this.react('✅');
   }
   /** Mark this specific message as read. */
   async read() {
@@ -412,12 +427,21 @@ export class Message {
     adReply: ExternalAdReplyOptions,
     options?: MiscMessageGenerationOptions,
   ) {
+    let thumbnail: Uint8Array | undefined;
+    if (adReply.thumbnailUrl) {
+      try {
+        const res = await fetch(adReply.thumbnailUrl);
+        const buf = Buffer.from(await res.arrayBuffer());
+        thumbnail = new Uint8Array(buf);
+      } catch {}
+    }
     const contextInfo = {
       ...((content as Record<string, unknown>)?.contextInfo as Record<string, unknown>),
       externalAdReply: {
         title: adReply.title,
         body: adReply.body,
         thumbnailUrl: adReply.thumbnailUrl,
+        thumbnail,
         mediaType: adReply.banner ? 1 : adReply.mediaType,
         sourceUrl: adReply.sourceUrl,
         renderLargerThumbnail: adReply.banner ? true : adReply.renderLargerThumbnail,
@@ -430,5 +454,29 @@ export class Message {
       { ...options, quoted: this.#raw },
     );
     return msg ? new Message(msg, this.#bot) : undefined;
+  }
+  /**
+   * Forward this message to another chat.
+   * @param jid The JID of the destination chat.
+   * @returns The forwarded message if successful, otherwise undefined.
+   */
+  async forward(jid: string) {
+    assertType(jid, 'jid', 'string');
+    const msg = await this.#bot.sock.sendMessage(jid, { forward: this.#raw });
+    return msg ? new Message(msg, this.#bot) : undefined;
+  }
+  /**
+   * Pin or unpin this message in the current chat.
+   * @param pin Whether to pin (true) or unpin (false) the message.
+   */
+  async pin(pin = true) {
+    await this.#bot.sock.chatModify({ pin }, this.chat.jid);
+  }
+  /**
+   * Star or unstar this message.
+   * @param star Whether to star (true) or unstar (false) the message.
+   */
+  async star(star = true) {
+    await this.#bot.sock.star(this.chat.jid, [{ id: this.id, fromMe: this.sender?.isMe }], star);
   }
 }

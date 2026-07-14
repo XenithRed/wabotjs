@@ -6,12 +6,14 @@
 
 ## Enumerations
 
+- [ErrorCode](enumerations/ErrorCode.md)
 - [Events](enumerations/Events.md)
 
 ## Classes
 
 - [Auth](classes/Auth.md)
 - [Bot](classes/Bot.md)
+- [BotError](classes/BotError.md)
 - [LRUCache](classes/LRUCache.md)
 - [Message](classes/Message.md)
 - [Socket](classes/Socket.md)

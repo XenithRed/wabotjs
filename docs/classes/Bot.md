@@ -6,7 +6,7 @@
 
 # Class: Bot
 
-Defined in: Bot.ts:74
+Defined in: Bot.ts:110
 
 Core class for managing the WhatsApp bot.
 
@@ -20,7 +20,7 @@ Core class for managing the WhatsApp bot.
 
 > **new Bot**(`id`, `auth`): `Bot`
 
-Defined in: Bot.ts:101
+Defined in: Bot.ts:137
 
 Creates a new instance of the Bot class.
 
@@ -43,12 +43,12 @@ Creates a new instance of the Bot class.
 
 | Property | Type | Description | Defined in |
 | ------ | ------ | ------ | ------ |
-| <a id="auth"></a> `auth` | [`Auth`](Auth.md) | The authentication state manager. | Bot.ts:84 |
-| <a id="cache"></a> `cache` | `object` | Bot cache. | Bot.ts:86 |
-| `cache.flush` | () => `void` | Clear all caches. | Bot.ts:94 |
-| `cache.groups` | [`LRUCache`](LRUCache.md)\<`GroupMetadata`\> | Groups metadata cache. | Bot.ts:90 |
-| `cache.messages` | [`TTLCache`](TTLCache.md)\<`WAMessage`\> | Message cache. | Bot.ts:92 |
-| `cache.users` | [`UserCache`](UserCache.md) | User cache. | Bot.ts:88 |
+| <a id="auth"></a> `auth` | [`Auth`](Auth.md) | The authentication state manager. | Bot.ts:120 |
+| <a id="cache"></a> `cache` | `object` | Bot cache. | Bot.ts:122 |
+| `cache.flush` | () => `void` | Clear all caches. | Bot.ts:130 |
+| `cache.groups` | [`LRUCache`](LRUCache.md)\<`GroupMetadata`\> | Groups metadata cache. | Bot.ts:126 |
+| `cache.messages` | [`TTLCache`](TTLCache.md)\<`WAMessage`\> | Message cache. | Bot.ts:128 |
+| `cache.users` | [`UserCache`](UserCache.md) | User cache. | Bot.ts:124 |
 
 ## Accessors
 
@@ -58,7 +58,7 @@ Creates a new instance of the Bot class.
 
 > **get** **id**(): `string`
 
-Defined in: Bot.ts:331
+Defined in: Bot.ts:367
 
 Gets the bot's identifier.
 
@@ -74,7 +74,7 @@ Gets the bot's identifier.
 
 > **get** **me**(): [`User`](../interfaces/User.md)
 
-Defined in: Bot.ts:349
+Defined in: Bot.ts:385
 
 Gets the bot's account.
 
@@ -90,7 +90,7 @@ Gets the bot's account.
 
 > **get** **prefix**(): `string`
 
-Defined in: Bot.ts:338
+Defined in: Bot.ts:374
 
 Gets the bot's command prefix.
 
@@ -112,7 +112,7 @@ Gets the bot's command prefix.
 
 > **get** **sock**(): [`Socket`](Socket.md)
 
-Defined in: Bot.ts:342
+Defined in: Bot.ts:378
 
 Gets the bot's socket.
 
@@ -126,7 +126,7 @@ Gets the bot's socket.
 
 > **close**(`err?`): `Promise`\<`void`\>
 
-Defined in: Bot.ts:463
+Defined in: Bot.ts:499
 
 Closes the bot connection without dropping the authentication state.
 
@@ -142,11 +142,34 @@ Closes the bot connection without dropping the authentication state.
 
 ***
 
+### getProfilePicture()
+
+> **getProfilePicture**(`jid`, `type?`): `Promise`\<`string` \| `undefined`\>
+
+Defined in: Bot.ts:641
+
+Get the profile picture URL of a JID with caching.
+
+#### Parameters
+
+| Parameter | Type | Default value | Description |
+| ------ | ------ | ------ | ------ |
+| `jid` | `string` | `undefined` | The JID to get the profile picture for. |
+| `type` | `"image"` \| `"preview"` | `'image'` | The type of picture to fetch ('image' or 'preview'). |
+
+#### Returns
+
+`Promise`\<`string` \| `undefined`\>
+
+The profile picture URL, or undefined if not found.
+
+***
+
 ### login()
 
 > **login**(`pn?`): `Promise`\<`void`\>
 
-Defined in: Bot.ts:370
+Defined in: Bot.ts:406
 
 Log in with your existing authentication state or create a new session.
 If a phone number is provided, the login method will be by pairing code (OTP), otherwise it will be by QR code.
@@ -167,7 +190,7 @@ If a phone number is provided, the login method will be by pairing code (OTP), o
 
 > **logout**(`err?`): `Promise`\<`void`\>
 
-Defined in: Bot.ts:443
+Defined in: Bot.ts:479
 
 Logs out the bot and drops the authentication state.
 
@@ -183,11 +206,185 @@ Logs out the bot and drops the authentication state.
 
 ***
 
+### send()
+
+> **send**(`jid`, `content`, `options?`): `Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+Defined in: Bot.ts:523
+
+Send a message to any JID.
+
+#### Parameters
+
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `jid` | `string` | The destination JID. |
+| `content` | `AnyMessageContent` | The message content. |
+| `options?` | `MiscMessageGenerationOptions` | Additional options for message generation. |
+
+#### Returns
+
+`Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+The sent message if successful, otherwise undefined.
+
+***
+
+### sendAdReply()
+
+> **sendAdReply**(`jid`, `content`, `adReply`, `options?`): `Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+Defined in: Bot.ts:535
+
+Send a message with an external ad reply.
+
+#### Parameters
+
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `jid` | `string` | The destination JID. |
+| `content` | `AnyMessageContent` | The message content. |
+| `adReply` | [`ExternalAdReplyOptions`](../interfaces/ExternalAdReplyOptions.md) | The external ad reply options. |
+| `options?` | `MiscMessageGenerationOptions` | Additional options for message generation. |
+
+#### Returns
+
+`Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+The sent message if successful, otherwise undefined.
+
+***
+
+### sendAudio()
+
+> **sendAudio**(`jid`, `media`, `ptt?`, `options?`): `Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+Defined in: Bot.ts:601
+
+Send an audio to a chat.
+
+#### Parameters
+
+| Parameter | Type | Default value | Description |
+| ------ | ------ | ------ | ------ |
+| `jid` | `string` | `undefined` | The destination JID. |
+| `media` | `WAMediaUpload` | `undefined` | The audio (Buffer, Stream, URL). |
+| `ptt` | `boolean` | `false` | Whether to send as voice note (PTT). Defaults to false. |
+| `options?` | `MiscMessageGenerationOptions` | `undefined` | Additional options for message generation. |
+
+#### Returns
+
+`Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+The sent message if successful, otherwise undefined.
+
+***
+
+### sendDocument()
+
+> **sendDocument**(`jid`, `media`, `mimetype`, `fileName`, `options?`): `Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+Defined in: Bot.ts:614
+
+Send a document to a chat.
+
+#### Parameters
+
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `jid` | `string` | The destination JID. |
+| `media` | `WAMediaUpload` | The document (Buffer, Stream, URL). |
+| `mimetype` | `string` | The MIME type of the document. |
+| `fileName` | `string` | The file name to display. |
+| `options?` | `MiscMessageGenerationOptions` | Additional options for message generation. |
+
+#### Returns
+
+`Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+The sent message if successful, otherwise undefined.
+
+***
+
+### sendImage()
+
+> **sendImage**(`jid`, `media`, `caption?`, `options?`): `Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+Defined in: Bot.ts:577
+
+Send an image to a chat.
+
+#### Parameters
+
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `jid` | `string` | The destination JID. |
+| `media` | `WAMediaUpload` | The image (Buffer, Stream, URL). |
+| `caption?` | `string` | Optional caption for the image. |
+| `options?` | `MiscMessageGenerationOptions` | Additional options for message generation. |
+
+#### Returns
+
+`Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+The sent message if successful, otherwise undefined.
+
+***
+
+### sendSticker()
+
+> **sendSticker**(`jid`, `media`, `options?`): `Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+Defined in: Bot.ts:631
+
+Send a sticker to a chat.
+
+#### Parameters
+
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `jid` | `string` | The destination JID. |
+| `media` | `WAMediaUpload` | The sticker (Buffer, Stream, URL). |
+| `options?` | `MiscMessageGenerationOptions` | Additional options for message generation. |
+
+#### Returns
+
+`Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+The sent message if successful, otherwise undefined.
+
+***
+
+### sendVideo()
+
+> **sendVideo**(`jid`, `media`, `caption?`, `options?`): `Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+Defined in: Bot.ts:589
+
+Send a video to a chat.
+
+#### Parameters
+
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `jid` | `string` | The destination JID. |
+| `media` | `WAMediaUpload` | The video (Buffer, Stream, URL). |
+| `caption?` | `string` | Optional caption for the video. |
+| `options?` | `MiscMessageGenerationOptions` | Additional options for message generation. |
+
+#### Returns
+
+`Promise`\<[`Message`](Message.md) \| `undefined`\>
+
+The sent message if successful, otherwise undefined.
+
+***
+
 ### setPrefix()
 
 > **setPrefix**(`prefix`): `Bot`
 
-Defined in: Bot.ts:360
+Defined in: Bot.ts:396
 
 Sets the bot's command prefix.
 

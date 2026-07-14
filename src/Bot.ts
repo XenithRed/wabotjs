@@ -12,9 +12,11 @@ import { Boom } from '@hapi/boom';
 import type { Output } from '@hapi/boom';
 import ms from 'ms';
 import type { GroupMetadata, WAMessage } from 'baileys';
+import type { AnyMessageContent, MiscMessageGenerationOptions, WAMediaUpload } from 'baileys';
 import { delay, DisconnectReason, isJidGroup, isLidUser, isPnUser } from 'baileys';
 import { EventEmitter } from 'node:events';
 import { Message } from './Message.js';
+import type { ExternalAdReplyOptions } from './Message.js';
 import { Socket } from './Socket.js';
 import { Auth } from './Auth.js';
 
@@ -28,6 +30,40 @@ export interface User {
   name?: string;
   /** Soon. */
   username?: string;
+}
+/** Error codes for the bot. */
+export enum ErrorCode {
+  /** An unknown error occurred. */
+  UNKNOWN = 'UNKNOWN',
+  /** The socket connection failed. */
+  SOCKET = 'SOCKET',
+  /** The authentication state failed to load or save. */
+  AUTH = 'AUTH',
+  /** The pairing code request failed. */
+  PAIRING = 'PAIRING',
+  /** The QR code generation failed. */
+  QR = 'QR',
+  /** A message operation failed. */
+  MESSAGE = 'MESSAGE',
+  /** A group operation failed. */
+  GROUP = 'GROUP',
+  /** The login process failed. */
+  LOGIN = 'LOGIN',
+  /** The logout process failed. */
+  LOGOUT = 'LOGOUT',
+}
+/** Represents an error with a typed code. */
+export class BotError extends Error {
+  /** The error code. */
+  code: ErrorCode;
+  /** The original error, if any. */
+  cause?: Error;
+  constructor(message: string, code: ErrorCode, cause?: Error) {
+    super(message);
+    this.name = 'BotError';
+    this.code = code;
+    this.cause = cause;
+  }
 }
 /** Event names for the bot. */
 export enum Events {
@@ -119,7 +155,7 @@ export class Bot extends EventEmitter<EventMap> {
       try {
         this.auth.save();
       } catch (e) {
-        this.emit(Events.ERROR, toError(e));
+        this.emit(Events.ERROR, new BotError('Failed to save auth state', ErrorCode.AUTH, toError(e)));
       }
     });
     this.sock.ev.on('connection.update', async (upd) => {
@@ -195,7 +231,7 @@ export class Bot extends EventEmitter<EventMap> {
           }, ms('60s'));
         }
       } catch (e) {
-        this.emit(Events.ERROR, toError(e));
+        this.emit(Events.ERROR, new BotError('Connection update failed', ErrorCode.SOCKET, toError(e)));
       }
     });
     this.sock.ev.on('messages.upsert', async (ups) => {
@@ -261,7 +297,7 @@ export class Bot extends EventEmitter<EventMap> {
           this.emit(Events.COMMAND, message, name, args);
         }
       } catch (e) {
-        this.emit(Events.ERROR, toError(e));
+        this.emit(Events.ERROR, new BotError('Message processing failed', ErrorCode.MESSAGE, toError(e)));
       }
     });
     this.sock.ev.on('group-participants.update', (upd) => {
@@ -311,7 +347,7 @@ export class Bot extends EventEmitter<EventMap> {
           }
         }
       } catch (e) {
-        this.emit(Events.ERROR, toError(e));
+        this.emit(Events.ERROR, new BotError('Group participant update failed', ErrorCode.GROUP, toError(e)));
       }
     });
     this.sock.ev.on('groups.update', (upd) => {
@@ -323,7 +359,7 @@ export class Bot extends EventEmitter<EventMap> {
           }
         });
       } catch (e) {
-        this.emit(Events.ERROR, toError(e));
+        this.emit(Events.ERROR, new BotError('Group update failed', ErrorCode.GROUP, toError(e)));
       }
     });
   }
@@ -476,5 +512,142 @@ export class Bot extends EventEmitter<EventMap> {
       this.#logged = false;
       this.#reconnectionAttempts = 0;
     }
+  }
+  /**
+   * Send a message to any JID.
+   * @param jid The destination JID.
+   * @param content The message content.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async send(jid: string, content: AnyMessageContent, options?: MiscMessageGenerationOptions) {
+    const msg = await this.sock.sendMessage(jid, content, options);
+    return msg ? new Message(msg, this) : undefined;
+  }
+  /**
+   * Send a message with an external ad reply.
+   * @param jid The destination JID.
+   * @param content The message content.
+   * @param adReply The external ad reply options.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async sendAdReply(
+    jid: string,
+    content: AnyMessageContent,
+    adReply: ExternalAdReplyOptions,
+    options?: MiscMessageGenerationOptions,
+  ) {
+    let thumbnail: Uint8Array | undefined;
+    if (adReply.thumbnailUrl) {
+      try {
+        const res = await fetch(adReply.thumbnailUrl);
+        const buf = Buffer.from(await res.arrayBuffer());
+        thumbnail = new Uint8Array(buf);
+      } catch {}
+    }
+    const contextInfo = {
+      ...((content as Record<string, unknown>)?.contextInfo as Record<string, unknown>),
+      externalAdReply: {
+        title: adReply.title,
+        body: adReply.body,
+        thumbnailUrl: adReply.thumbnailUrl,
+        thumbnail,
+        mediaType: adReply.banner ? 1 : adReply.mediaType,
+        sourceUrl: adReply.sourceUrl,
+        renderLargerThumbnail: adReply.banner ? true : adReply.renderLargerThumbnail,
+        showAdAttribution: adReply.showAdAttribution,
+      },
+    };
+    const msg = await this.sock.sendMessage(
+      jid,
+      { ...content, contextInfo } as AnyMessageContent,
+      options,
+    );
+    return msg ? new Message(msg, this) : undefined;
+  }
+  /**
+   * Send an image to a chat.
+   * @param jid The destination JID.
+   * @param media The image (Buffer, Stream, URL).
+   * @param caption Optional caption for the image.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async sendImage(jid: string, media: WAMediaUpload, caption?: string, options?: MiscMessageGenerationOptions) {
+    const msg = await this.sock.sendMessage(jid, { image: media, caption }, options);
+    return msg ? new Message(msg, this) : undefined;
+  }
+  /**
+   * Send a video to a chat.
+   * @param jid The destination JID.
+   * @param media The video (Buffer, Stream, URL).
+   * @param caption Optional caption for the video.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async sendVideo(jid: string, media: WAMediaUpload, caption?: string, options?: MiscMessageGenerationOptions) {
+    const msg = await this.sock.sendMessage(jid, { video: media, caption }, options);
+    return msg ? new Message(msg, this) : undefined;
+  }
+  /**
+   * Send an audio to a chat.
+   * @param jid The destination JID.
+   * @param media The audio (Buffer, Stream, URL).
+   * @param ptt Whether to send as voice note (PTT). Defaults to false.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async sendAudio(jid: string, media: WAMediaUpload, ptt = false, options?: MiscMessageGenerationOptions) {
+    const msg = await this.sock.sendMessage(jid, { audio: media, ptt }, options);
+    return msg ? new Message(msg, this) : undefined;
+  }
+  /**
+   * Send a document to a chat.
+   * @param jid The destination JID.
+   * @param media The document (Buffer, Stream, URL).
+   * @param mimetype The MIME type of the document.
+   * @param fileName The file name to display.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async sendDocument(
+    jid: string,
+    media: WAMediaUpload,
+    mimetype: string,
+    fileName: string,
+    options?: MiscMessageGenerationOptions,
+  ) {
+    const msg = await this.sock.sendMessage(jid, { document: media, mimetype, fileName }, options);
+    return msg ? new Message(msg, this) : undefined;
+  }
+  /**
+   * Send a sticker to a chat.
+   * @param jid The destination JID.
+   * @param media The sticker (Buffer, Stream, URL).
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async sendSticker(jid: string, media: WAMediaUpload, options?: MiscMessageGenerationOptions) {
+    const msg = await this.sock.sendMessage(jid, { sticker: media }, options);
+    return msg ? new Message(msg, this) : undefined;
+  }
+  /**
+   * Get the profile picture URL of a JID with caching.
+   * @param jid The JID to get the profile picture for.
+   * @param type The type of picture to fetch ('image' or 'preview').
+   * @returns The profile picture URL, or undefined if not found.
+   */
+  async getProfilePicture(jid: string, type: 'image' | 'preview' = 'image') {
+    const key = `pp:${jid}:${type}`;
+    const cached = this.cache.messages.get(key) as unknown as string | undefined;
+    if (cached) {
+      return cached;
+    }
+    const url = await this.sock.profilePictureUrl(jid, type);
+    if (url) {
+      this.cache.messages.set(key, url as unknown as WAMessage);
+    }
+    return url;
   }
 }
