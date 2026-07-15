@@ -477,10 +477,14 @@ export class Bot extends EventEmitter<EventMap> {
    * @param err Optional error to provide context for the logout.
    */
   async logout(err?: Error) {
+    const sock = this.#sock;
+    if (!sock) {
+      return;
+    }
     try {
-      await this.sock.logout(err).catch(() => void 0);
+      await sock.logout(err).catch(() => void 0);
       //@ts-ignore
-      this.sock.ev.removeAllListeners(undefined);
+      sock.ev.removeAllListeners(undefined);
       this.auth.drop();
     } catch (e) {
       throw toError(e);
