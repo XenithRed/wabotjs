@@ -44,6 +44,19 @@ export interface Sender extends User {
 export class Message {
   #raw: WAMessage;
   #bot: Bot;
+  #resolvedParticipant: { lid: string | undefined; pn: string | undefined };
+  #cachedContent?: Record<string, unknown> | string;
+  #cachedContentType?: keyof WAProto.IMessage;
+  #contentResolved: boolean;
+  #mentions?: User[];
+  #quoted?: Message | null;
+  #type?: keyof WAProto.IMessage;
+  #mimetype?: string;
+  #hash?: Uint8Array;
+  #key?: Uint8Array;
+  #url?: string;
+  #path?: string;
+  #size?: Long;
   /** The ID of the message. */
   id: string;
   /** The chat to which the message belongs. */
@@ -54,26 +67,8 @@ export class Message {
   senderJid: string;
   /** The text content of the message. */
   text?: string;
-  /** The users mentioned in the message. */
-  mentions: User[];
   /** The timestamp (UNIX) of the message. */
   timestamp: Long;
-  /** The type of the message. */
-  type?: keyof WAProto.IMessage;
-  /** The MIME type of the message. */
-  mimetype?: string;
-  /** The hash of the message. */
-  hash?: Uint8Array;
-  /** The key of the message. */
-  key?: Uint8Array;
-  /** The URL of the message. */
-  url?: string;
-  /** The path of the message. */
-  path?: string;
-  /** The size (bytes) of the message. */
-  size?: Long;
-  /** The quoted message. */
-  quoted?: Message;
   /**
    * Creates a new Message instance.
    * @param raw The raw WAMessage object from baileys.
@@ -84,40 +79,33 @@ export class Message {
     assertType(raw.key.remoteJid, 'raw.key.remoteJid', 'string');
     this.#raw = raw;
     this.#bot = bot;
+    this.#contentResolved = false;
+    this.#resolvedParticipant = resolveLIDOrPN(raw.key.participant, raw.key.participantAlt);
     this.id = raw.key.id!;
-    this.chat = this.#getChat();
-    this.sender = this.#getSender();
-    this.senderJid = this.#getSenderJid();
-    this.text = this.#getText();
-    this.mentions = this.#getMentions();
+    this.chat = this.#resolveChat();
+    this.sender = this.#resolveSender();
+    this.senderJid = this.#resolveSenderJid();
+    this.text = this.#resolveText();
     this.timestamp = Long.fromValue(raw.messageTimestamp || Math.floor(Date.now() / 1000));
-    if (raw.message) {
-      this.type = this.#getType(raw.message);
-      this.mimetype = this.#getMIMEType(raw.message);
-      this.hash = this.#getHash(raw.message);
-      this.key = this.#getKey(raw.message);
-      this.url = this.#getURL(raw.message);
-      this.path = this.#getPath(raw.message);
-      this.size = this.#getSize(raw.message);
-    }
-    this.quoted = this.#getQuote();
-    if (this.quoted) {
-      delete this.quoted.quoted;
-    }
   }
-  #getContentType(msg?: WAProto.IMessage | null) {
-    if (!msg) {
-      return;
+  #resolveContent() {
+    if (this.#contentResolved) {
+      return this.#cachedContent;
     }
-    return (Object.keys(msg) as (keyof WAProto.IMessage)[])
+    this.#contentResolved = true;
+    if (!this.#raw.message) {
+      this.#cachedContentType = undefined;
+      this.#cachedContent = undefined;
+      return undefined;
+    }
+    const type = (Object.keys(this.#raw.message) as (keyof WAProto.IMessage)[])
       .filter((k) => k !== 'senderKeyDistributionMessage' && k !== 'messageContextInfo')
       .at(0);
+    this.#cachedContentType = type;
+    this.#cachedContent = type ? (this.#raw.message as Record<string, unknown>)[type as string] as Record<string, unknown> | string : undefined;
+    return this.#cachedContent;
   }
-  #getContent(msg?: WAProto.IMessage | null) {
-    const type = this.#getContentType(msg);
-    return msg && type ? msg[type] : undefined;
-  }
-  #getChat(): Chat {
+  #resolveChat(): Chat {
     if (isJidGroup(this.#raw.key.remoteJid!)) {
       const jid = this.#raw.key.remoteJid!;
       const group = this.#bot.cache.groups.get(jid);
@@ -142,7 +130,7 @@ export class Message {
       type: 'unknown',
     };
   }
-  #getSender(): Sender | undefined {
+  #resolveSender(): Sender | undefined {
     if (this.#raw.key.fromMe) {
       return {
         ...this.#bot.me,
@@ -150,7 +138,7 @@ export class Message {
         isMe: true,
       };
     }
-    const { lid, pn } = resolveLIDOrPN(this.#raw.key.participant, this.#raw.key.participantAlt);
+    const { lid, pn } = this.#resolvedParticipant;
     if (lid || pn) {
       const user = this.#bot.cache.users.get({ lid, pn });
       if (user) {
@@ -175,42 +163,47 @@ export class Message {
       }
     }
   }
-  #getSenderJid(): string {
+  #resolveSenderJid(): string {
     if (this.#raw.key.fromMe) {
       return this.#bot.me.lid || this.#bot.me.pn;
     }
-    const { lid, pn } = resolveLIDOrPN(this.#raw.key.participant, this.#raw.key.participantAlt);
+    const { lid, pn } = this.#resolvedParticipant;
     if (lid || pn) {
       const user = this.#bot.cache.users.get({ lid, pn });
       return user?.lid || user?.pn || lid || pn || '';
     }
     return this.chat.jid;
   }
-  #getText() {
-    const ctn = this.#getContent(this.#raw.message);
+  #resolveText() {
+    const ctn = this.#resolveContent();
     if (!ctn) {
       return;
     }
-    return (
+    const val = (
       typeof ctn === 'string'
         ? ctn
-        : 'text' in ctn
-          ? ctn.text
-          : 'caption' in ctn
-            ? ctn.caption
-            : 'selectedButtonId' in ctn
-              ? (ctn.selectedButtonId as string)
+        : 'text' in (ctn as Record<string, unknown>)
+          ? (ctn as Record<string, unknown>).text
+          : 'caption' in (ctn as Record<string, unknown>)
+            ? (ctn as Record<string, unknown>).caption
+            : 'selectedButtonId' in (ctn as Record<string, unknown>)
+              ? (ctn as Record<string, unknown>).selectedButtonId
               : undefined
-    )?.trim();
+    );
+    return typeof val === 'string' ? val.trim() : undefined;
   }
-  #getMentions() {
-    const ctn = this.#getContent(this.#raw.message);
+  get mentions(): User[] {
+    if (this.#mentions) {
+      return this.#mentions;
+    }
+    const ctn = this.#resolveContent();
     if (!ctn || typeof ctn === 'string') {
-      return [];
+      return (this.#mentions = []);
     }
     const mentions = new Set<User>();
-    if ('contextInfo' in ctn && Array.isArray(ctn.contextInfo?.mentionedJid)) {
-      ctn.contextInfo.mentionedJid.forEach((m) => {
+    const c = ctn as Record<string, unknown>;
+    if ('contextInfo' in c && Array.isArray((c.contextInfo as Record<string, unknown>)?.mentionedJid)) {
+      ((c.contextInfo as Record<string, unknown>).mentionedJid as string[]).forEach((m: string) => {
         const { lid, pn } = resolveLIDOrPN(m);
         if (!lid && !pn) {
           return;
@@ -221,116 +214,160 @@ export class Message {
         }
       });
     }
-    return mentions.values().toArray();
+    this.#mentions = mentions.values().toArray();
+    return this.#mentions;
   }
-  #getType(msg?: WAProto.IMessage | null): keyof WAProto.IMessage | undefined {
-    if (!msg) {
-      return;
+  get type(): keyof WAProto.IMessage | undefined {
+    if (this.#type) {
+      return this.#type;
     }
-    const type = this.#getContentType(msg);
-    const ctn = this.#getContent(msg);
-    return typeof ctn === 'object' && ctn && 'message' in ctn ? this.#getType(ctn.message) : type;
+    if (this.#raw.message) {
+      const ctn = this.#resolveContent();
+      if (ctn && typeof ctn === 'object' && 'message' in (ctn as Record<string, unknown>)) {
+        return this.#resolveNestedType((ctn as Record<string, unknown>).message as Record<string, unknown>);
+      }
+    }
+    this.#type = this.#cachedContentType;
+    return this.#type;
   }
-  #getMIMEType(msg?: WAProto.IMessage | null): string | undefined {
-    const ctn = this.#getContent(msg);
+  #resolveNestedType(msg: Record<string, unknown>): keyof WAProto.IMessage | undefined {
+    const type = (Object.keys(msg) as (keyof WAProto.IMessage)[])
+      .filter((k) => k !== 'senderKeyDistributionMessage' && k !== 'messageContextInfo')
+      .at(0);
+    const ctn = type ? msg[type as string] : undefined;
+    if (typeof ctn === 'object' && ctn && 'message' in (ctn as Record<string, unknown>)) {
+      return this.#resolveNestedType((ctn as Record<string, unknown>).message as Record<string, unknown>);
+    }
+    return type;
+  }
+  get mimetype(): string | undefined {
+    if (this.#mimetype !== undefined) {
+      return this.#mimetype;
+    }
+    const ctn = this.#resolveContent();
     if (!ctn || typeof ctn === 'string') {
-      return;
+      return (this.#mimetype = undefined);
     }
-    if ('mimetype' in ctn && typeof ctn.mimetype === 'string') {
-      return ctn.mimetype;
+    const c = ctn as Record<string, unknown>;
+    if ('mimetype' in c && typeof c.mimetype === 'string') {
+      return (this.#mimetype = c.mimetype);
     }
-    if ('message' in ctn) {
-      return this.#getMIMEType(ctn.message);
+    if ('message' in c && typeof c.message === 'object' && c.message) {
+      return (this.#mimetype = this.#resolveNestedMIMEType(c.message as Record<string, unknown>));
+    }
+    return (this.#mimetype = undefined);
+  }
+  #resolveNestedMIMEType(msg: Record<string, unknown>): string | undefined {
+    if ('mimetype' in msg && typeof msg.mimetype === 'string') {
+      return msg.mimetype;
+    }
+    if ('message' in msg && typeof msg.message === 'object' && msg.message) {
+      return this.#resolveNestedMIMEType(msg.message as Record<string, unknown>);
     }
   }
-  #getHash(msg?: WAProto.IMessage): Uint8Array | undefined {
-    const ctn = this.#getContent(msg);
+  get hash(): Uint8Array | undefined {
+    if (this.#hash !== undefined) {
+      return this.#hash;
+    }
+    const ctn = this.#resolveContent();
     if (!ctn || typeof ctn === 'string') {
-      return;
+      return (this.#hash = undefined);
     }
     if ('fileSha256' in ctn && ctn.fileSha256) {
       if (ctn.fileSha256 instanceof Buffer) {
-        return new Uint8Array(ctn.fileSha256);
+        return (this.#hash = new Uint8Array(ctn.fileSha256));
       }
-      return ctn.fileSha256 as Uint8Array;
+      return (this.#hash = ctn.fileSha256 as Uint8Array);
     }
-    if ('message' in ctn) {
-      return this.#getHash(ctn.message || {});
-    }
+    return (this.#hash = undefined);
   }
-  #getKey(msg?: WAProto.IMessage): Uint8Array | undefined {
-    const ctn = this.#getContent(msg);
+  get key(): Uint8Array | undefined {
+    if (this.#key !== undefined) {
+      return this.#key;
+    }
+    const ctn = this.#resolveContent();
     if (!ctn || typeof ctn === 'string') {
-      return;
+      return (this.#key = undefined);
     }
     if ('mediaKey' in ctn && ctn.mediaKey) {
       if (ctn.mediaKey instanceof Buffer) {
-        return new Uint8Array(ctn.mediaKey);
+        return (this.#key = new Uint8Array(ctn.mediaKey));
       }
-      return ctn.mediaKey as Uint8Array;
+      return (this.#key = ctn.mediaKey as Uint8Array);
     }
-    if ('message' in ctn) {
-      return this.#getKey(ctn.message || {});
-    }
+    return (this.#key = undefined);
   }
-  #getURL(msg?: WAProto.IMessage | null): string | undefined {
-    const ctn = this.#getContent(msg);
+  get url(): string | undefined {
+    if (this.#url !== undefined) {
+      return this.#url;
+    }
+    const ctn = this.#resolveContent();
     if (!ctn || typeof ctn === 'string') {
-      return;
+      return (this.#url = undefined);
     }
     if ('url' in ctn && typeof ctn.url === 'string') {
-      return new URL(ctn.url).href;
+      return (this.#url = new URL(ctn.url).href);
     }
-    if ('message' in ctn) {
-      return this.#getURL(ctn.message);
-    }
+    return (this.#url = undefined);
   }
-  #getPath(msg?: WAProto.IMessage | null): string | undefined {
-    const ctn = this.#getContent(msg);
+  get path(): string | undefined {
+    if (this.#path !== undefined) {
+      return this.#path;
+    }
+    const ctn = this.#resolveContent();
     if (!ctn || typeof ctn === 'string') {
-      return;
+      return (this.#path = undefined);
     }
     if ('directPath' in ctn && typeof ctn.directPath === 'string') {
-      return ctn.directPath;
+      return (this.#path = ctn.directPath);
     }
-    if ('message' in ctn) {
-      return this.#getPath(ctn.message);
-    }
+    return (this.#path = undefined);
   }
-  #getSize(msg?: WAProto.IMessage | null): Long | undefined {
-    const ctn = this.#getContent(msg);
-    if (!ctn || typeof ctn === 'string') {
-      return;
+  get size(): Long | undefined {
+    if (this.#size !== undefined) {
+      return this.#size;
     }
-    this.#raw.message?.imageMessage?.fileLength;
+    const ctn = this.#resolveContent();
+    if (!ctn || typeof ctn === 'string') {
+      return (this.#size = undefined);
+    }
     if ('fileLength' in ctn && ctn.fileLength) {
-      return Long.fromValue(ctn.fileLength as Long | number);
+      return (this.#size = Long.fromValue(ctn.fileLength as Long | number));
     }
-    if ('message' in ctn) {
-      return this.#getSize(ctn.message);
-    }
+    return (this.#size = undefined);
   }
-  #getQuote() {
-    const ctn = this.#getContent(this.#raw.message || {});
-    if (!ctn || typeof ctn === 'string') {
-      return;
+  get quoted(): Message | undefined {
+    if (this.#quoted !== null && this.#quoted !== undefined) {
+      return this.#quoted;
     }
-    if ('contextInfo' in ctn && ctn.contextInfo?.quotedMessage) {
-      const ctx = ctn.contextInfo;
-      const fromMe = ctx.participant
-        ? isAnyJIDEqual(ctx.participant, this.#bot.me.lid, this.#bot.me.pn)
+    if (this.#quoted === null) {
+      return undefined;
+    }
+    const ctn = this.#resolveContent();
+    if (!ctn || typeof ctn === 'string') {
+      this.#quoted = null;
+      return undefined;
+    }
+    const c = ctn as Record<string, unknown>;
+    const ctxInfo = 'contextInfo' in c ? (c.contextInfo as Record<string, unknown>) : undefined;
+    if (ctxInfo && 'quotedMessage' in ctxInfo) {
+      const fromMe = ctxInfo.participant
+        ? isAnyJIDEqual(ctxInfo.participant as string, this.#bot.me.lid, this.#bot.me.pn)
         : false;
       const msg = {
         key: {
-          remoteJid: ctx.remoteJid || this.chat.jid,
-          participant: fromMe ? this.#bot.me.lid : ctx.participant,
-          id: ctx.stanzaId,
+          remoteJid: (ctxInfo.remoteJid as string) || this.chat.jid,
+          participant: fromMe ? this.#bot.me.lid : (ctxInfo.participant as string),
+          id: ctxInfo.stanzaId as string,
           fromMe,
         },
-        message: ctx.quotedMessage,
+        message: ctxInfo.quotedMessage,
       };
-      return new Message(msg, this.#bot);
+      this.#quoted = new Message(msg as WAMessage, this.#bot);
+      return this.#quoted;
     }
+    this.#quoted = null;
+    return undefined;
   }
   /** Returns the raw WAMessage object from baileys. */
   get raw(): Readonly<WAMessage> {
@@ -345,9 +382,12 @@ export class Message {
    * @returns A buffer containing the downloaded file.
    */
   async download() {
-    const ctn = this.#raw.message ? this.#getContent(this.#raw.message) : undefined;
-    if (ctn && typeof ctn !== 'string' && 'message' in ctn && ctn.message) {
-      return await downloadMediaMessage({ key: this.#raw.key, message: ctn.message }, 'buffer', {});
+    const ctn = this.#resolveContent();
+    if (ctn && typeof ctn !== 'string' && 'message' in (ctn as Record<string, unknown>)) {
+      const inner = (ctn as Record<string, unknown>).message;
+      if (inner) {
+        return await downloadMediaMessage({ key: this.#raw.key, message: inner }, 'buffer', {});
+      }
     }
     return await downloadMediaMessage(this.#raw, 'buffer', {});
   }

@@ -238,7 +238,11 @@ export class Bot extends EventEmitter<EventMap> {
       try {
         for (const msg of ups.messages) {
           if (!msg.message || !msg.key.remoteJid || !msg.key.id) {
-            return;
+            continue;
+          }
+          if (ups.type === 'append') {
+            this.cache.messages.set(msg.key.id, msg);
+            continue;
           }
           if (isJidGroup(msg.key.remoteJid) && !this.cache.groups.has(msg.key.remoteJid)) {
             const metadata = await this.sock
@@ -278,21 +282,17 @@ export class Bot extends EventEmitter<EventMap> {
               }
             }
           }
-          if (ups.type === 'append') {
-            this.cache.messages.set(msg.key.id, msg);
-            return;
-          }
           const message = new Message(msg, this);
           this.emit(Events.MESSAGE, message);
           if (!message.text?.startsWith(this.prefix)) {
-            return;
+            continue;
           }
           const [name, ...args] = message.text
             .substring(this.#prefix.length)
             .split(/\s+/)
             .map((p, i) => (i === 0 ? p.toLowerCase() : p));
           if (name.length < 1) {
-            return;
+            continue;
           }
           this.emit(Events.COMMAND, message, name, args);
         }
