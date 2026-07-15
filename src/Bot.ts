@@ -497,13 +497,14 @@ export class Bot extends EventEmitter<EventMap> {
    * @param err Optional error to provide context for the closure.
    */
   async close(err?: Error) {
+    const sock = this.#sock;
+    if (!sock) {
+      return;
+    }
     try {
-      if (!this.#sock) {
-        throw new Error('unlogged');
-      }
-      await this.sock.end(err).catch(() => void 0);
+      await sock.end(err).catch(() => void 0);
       //@ts-ignore
-      this.sock.ev.removeAllListeners(undefined);
+      sock.ev.removeAllListeners(undefined);
     } catch (e) {
       throw toError(e);
     } finally {
