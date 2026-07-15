@@ -4,6 +4,35 @@ import type { Bot, User } from './Bot.js';
 import { assertType, isAnyJIDEqual, resolveLIDOrPN } from './utils/index.js';
 import Long from 'long';
 
+/** Options for sending a product message (WhatsApp Business). */
+export interface ProductOptions {
+  /** The product image (Buffer, Stream, URL). */
+  productImage: WAMediaUpload;
+  /** The product title. */
+  title: string;
+  /** The product description. */
+  description?: string;
+  /** Currency code (e.g. 'USD', 'EUR', 'COP'). */
+  currencyCode?: string;
+  /** Price in currency minor units (e.g. 1000 = $10.00). */
+  priceAmount1000?: number;
+  /** Retailer/product ID. */
+  retailerId?: string;
+  /** Product URL. */
+  url?: string;
+  /** Number of product images. */
+  productImageCount?: number;
+  /** First image ID. */
+  firstImageId?: string;
+  /** Sale price in currency minor units. */
+  salePriceAmount1000?: number;
+  /** Business owner JID. */
+  businessOwnerJid?: string;
+  /** Body text for the message. */
+  body?: string;
+  /** Footer text for the message. */
+  footer?: string;
+}
 /** Options for an external ad reply. */
 export interface ExternalAdReplyOptions {
   /** The title of the ad reply. */
@@ -12,7 +41,7 @@ export interface ExternalAdReplyOptions {
   body?: string;
   /** The thumbnail URL of the ad reply. */
   thumbnailUrl?: string;
-  /** The media type of the ad reply (1 = image, 2 = video, 3 = audio). */
+  /** The media type of the ad reply (1 = image, 2 = video). */
   mediaType?: number;
   /** The source URL of the ad reply. */
   sourceUrl?: string;
@@ -22,6 +51,34 @@ export interface ExternalAdReplyOptions {
   showAdAttribution?: boolean;
   /** If true, renders the thumbnail as a large banner with mediaType 1 (image). */
   banner?: boolean;
+  /** Click-to-WhatsApp Ad client ID. Required for CTWA campaigns. */
+  ctwaClid?: string;
+  /** Ad type: 0 = CTWA (Click-to-WhatsApp), 1 = CAWC (Click-to-WhatsApp Call). */
+  adType?: number;
+  /** Type of the ad source (e.g. 'ctwa'). */
+  sourceType?: string;
+  /** ID of the ad source. */
+  sourceId?: string;
+  /** Source application identifier. */
+  sourceApp?: string;
+  /** URL of the media content (separate from thumbnailUrl). */
+  mediaUrl?: string;
+  /** Original full-size image URL. */
+  originalImageUrl?: string;
+  /** Whether this message is an auto-reply. */
+  containsAutoReply?: boolean;
+  /** Whether the ad triggers a WhatsApp call. */
+  clickToWhatsappCall?: boolean;
+  /** Content of the automated greeting message. */
+  greetingMessageBody?: string;
+  /** Call-to-action payload data. */
+  ctaPayload?: string;
+  /** Website URL for the ad. */
+  wtwaWebsiteUrl?: boolean;
+  /** WhatsApp-to-WhatsApp ad format flag. */
+  wtwaAdFormat?: boolean;
+  /** Disable follow-up nudge. */
+  disableNudge?: boolean;
 }
 
 /** Represents a chat in the WhatsApp. */
@@ -486,11 +543,55 @@ export class Message {
         sourceUrl: adReply.sourceUrl,
         renderLargerThumbnail: adReply.banner ? true : adReply.renderLargerThumbnail,
         showAdAttribution: adReply.showAdAttribution,
+        ctwaClid: adReply.ctwaClid,
+        adType: adReply.adType,
+        sourceType: adReply.sourceType,
+        sourceId: adReply.sourceId,
+        sourceApp: adReply.sourceApp,
+        mediaUrl: adReply.mediaUrl,
+        originalImageUrl: adReply.originalImageUrl,
+        containsAutoReply: adReply.containsAutoReply,
+        clickToWhatsappCall: adReply.clickToWhatsappCall,
+        greetingMessageBody: adReply.greetingMessageBody,
+        ctaPayload: adReply.ctaPayload,
+        wtwaWebsiteUrl: adReply.wtwaWebsiteUrl,
+        wtwaAdFormat: adReply.wtwaAdFormat,
+        disableNudge: adReply.disableNudge,
       },
     };
     const msg = await this.#bot.sock.sendMessage(
       this.chat.jid,
       { ...content, contextInfo } as AnyMessageContent,
+      { ...options, quoted: this.#raw },
+    );
+    return msg ? new Message(msg, this.#bot) : undefined;
+  }
+  /**
+   * Reply with a product message (WhatsApp Business).
+   * @param product The product options.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async productReply(product: ProductOptions, options?: MiscMessageGenerationOptions) {
+    const msg = await this.#bot.sock.sendMessage(
+      this.chat.jid,
+      {
+        product: {
+          productImage: product.productImage,
+          title: product.title,
+          description: product.description,
+          currencyCode: product.currencyCode,
+          priceAmount1000: product.priceAmount1000,
+          retailerId: product.retailerId,
+          url: product.url,
+          productImageCount: product.productImageCount,
+          firstImageId: product.firstImageId,
+          salePriceAmount1000: product.salePriceAmount1000,
+        },
+        businessOwnerJid: product.businessOwnerJid,
+        body: product.body,
+        footer: product.footer,
+      },
       { ...options, quoted: this.#raw },
     );
     return msg ? new Message(msg, this.#bot) : undefined;

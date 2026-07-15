@@ -16,7 +16,7 @@ import type { AnyMessageContent, MiscMessageGenerationOptions, WAMediaUpload } f
 import { delay, DisconnectReason, isJidGroup, isLidUser, isPnUser } from 'baileys';
 import { EventEmitter } from 'node:events';
 import { Message } from './Message.js';
-import type { ExternalAdReplyOptions } from './Message.js';
+import type { ExternalAdReplyOptions, ProductOptions } from './Message.js';
 import { Socket } from './Socket.js';
 import { Auth } from './Auth.js';
 
@@ -558,11 +558,56 @@ export class Bot extends EventEmitter<EventMap> {
         sourceUrl: adReply.sourceUrl,
         renderLargerThumbnail: adReply.banner ? true : adReply.renderLargerThumbnail,
         showAdAttribution: adReply.showAdAttribution,
+        ctwaClid: adReply.ctwaClid,
+        adType: adReply.adType,
+        sourceType: adReply.sourceType,
+        sourceId: adReply.sourceId,
+        sourceApp: adReply.sourceApp,
+        mediaUrl: adReply.mediaUrl,
+        originalImageUrl: adReply.originalImageUrl,
+        containsAutoReply: adReply.containsAutoReply,
+        clickToWhatsappCall: adReply.clickToWhatsappCall,
+        greetingMessageBody: adReply.greetingMessageBody,
+        ctaPayload: adReply.ctaPayload,
+        wtwaWebsiteUrl: adReply.wtwaWebsiteUrl,
+        wtwaAdFormat: adReply.wtwaAdFormat,
+        disableNudge: adReply.disableNudge,
       },
     };
     const msg = await this.sock.sendMessage(
       jid,
       { ...content, contextInfo } as AnyMessageContent,
+      options,
+    );
+    return msg ? new Message(msg, this) : undefined;
+  }
+  /**
+   * Send a product message (WhatsApp Business).
+   * @param jid The destination JID.
+   * @param product The product options.
+   * @param options Additional options for message generation.
+   * @returns The sent message if successful, otherwise undefined.
+   */
+  async sendProduct(jid: string, product: ProductOptions, options?: MiscMessageGenerationOptions) {
+    const msg = await this.sock.sendMessage(
+      jid,
+      {
+        product: {
+          productImage: product.productImage,
+          title: product.title,
+          description: product.description,
+          currencyCode: product.currencyCode,
+          priceAmount1000: product.priceAmount1000,
+          retailerId: product.retailerId,
+          url: product.url,
+          productImageCount: product.productImageCount,
+          firstImageId: product.firstImageId,
+          salePriceAmount1000: product.salePriceAmount1000,
+        },
+        businessOwnerJid: product.businessOwnerJid,
+        body: product.body,
+        footer: product.footer,
+      },
       options,
     );
     return msg ? new Message(msg, this) : undefined;
